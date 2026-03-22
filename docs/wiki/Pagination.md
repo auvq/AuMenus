@@ -1,83 +1,33 @@
 # Pagination
 
-AuMenus supports paginated menus for displaying large lists of items across multiple pages.
+AuMenus supports paginated menus for displaying large item lists across multiple pages.
 
 ## Configuration
 
 ### page_slots
 
-Defines which inventory slots are used to display paginated items. Accepts the same range/list format as item `slots`.
+Inventory slots used for paginated items. Same range/list format as item `slots`.
 
 ```yaml
 page_slots: [10-16, 19-25, 28-34]
 ```
 
-This example uses 21 slots per page (3 rows of 7).
-
 ### page_items
 
-Items that fill the page slots. Defined the same way as regular items, but without `slot` or `slots` -- their position is determined by `page_slots` and the current page.
+Items that fill the page slots. Defined like regular items but without `slot` or `slots`. Position is determined by `page_slots` and the current page.
 
-```yaml
-page_items:
-  spawn:
-    material: GRASS_BLOCK
-    name: "&a&lSpawn"
-    lore:
-      - "&7Teleport to spawn."
-    on_click:
-      - player: "warp spawn"
-      - close
+### Placeholders
 
-  nether:
-    material: NETHERRACK
-    name: "&c&lNether"
-    on_click:
-      - player: "warp nether"
-      - close
-```
-
-Page items are distributed across pages automatically. With 21 `page_slots` and 42 `page_items`, you get 2 pages.
-
-## Placeholders
-
-These placeholders work in titles, lore, and item names:
-
-| Placeholder    | Description              |
-|----------------|--------------------------|
-| `{page}`       | Current page number      |
-| `{max_page}`   | Total number of pages    |
-
-```yaml
-title: "<dark_gray>Warps {page}/{max_page}</dark_gray>"
-```
+| Placeholder  | Description         |
+|--------------|---------------------|
+| `{page}`     | Current page number |
+| `{max_page}` | Total page count    |
 
 If the title contains `{page}` or `{max_page}`, changing pages re-creates the inventory to update the title.
 
-## Navigation
+### Navigation
 
-Use the `prev_page` and `next_page` actions on regular items (not page items) to navigate between pages.
-
-```yaml
-items:
-  previous_page:
-    material: ARROW
-    slot: 48
-    name: "&ePrevious Page"
-    lore:
-      - "&7Page {page}/{max_page}"
-    on_click:
-      - prev_page
-
-  next_page:
-    material: ARROW
-    slot: 50
-    name: "&eNext Page"
-    lore:
-      - "&7Page {page}/{max_page}"
-    on_click:
-      - next_page
-```
+Use `prev_page` and `next_page` actions on regular items (not page items).
 
 `prev_page` does nothing on page 1. `next_page` does nothing on the last page.
 
@@ -114,8 +64,6 @@ page_items:
       - player: "warp end"
       - close
 
-  # ... add more page items as needed
-
 items:
   border:
     material: GRAY_STAINED_GLASS_PANE
@@ -149,4 +97,4 @@ items:
       - close
 ```
 
-Regular `items` (border, navigation, close button) remain fixed on every page. Only the `page_slots` area changes content when navigating.
+Regular `items` (border, navigation, close button) stay fixed on every page. Only the `page_slots` area changes.

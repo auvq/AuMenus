@@ -72,11 +72,7 @@ public final class MenuMigrator {
             return List.of();
         }
 
-        File[] files = source.listFiles((dir, name) -> name.endsWith(".yml") || name.endsWith(".yaml"));
-        if (files == null) {
-            return List.of();
-        }
-
+        List<File> files = findYamlFiles(source);
         List<String> names = new ArrayList<>();
         for (File file : files) {
             names.add(file.getName().replace(".yml", "").replace(".yaml", ""));
@@ -90,10 +86,7 @@ public final class MenuMigrator {
             return 0;
         }
 
-        File[] files = source.listFiles((dir, name) -> name.endsWith(".yml") || name.endsWith(".yaml"));
-        if (files == null) {
-            return 0;
-        }
+        List<File> files = findYamlFiles(source);
 
         int migrated = 0;
         for (File file : files) {
@@ -110,15 +103,14 @@ public final class MenuMigrator {
             return false;
         }
 
-        File file = new File(source, name + ".yml");
-        if (!file.exists()) {
-            file = new File(source, name + ".yaml");
+        List<File> allFiles = findYamlFiles(source);
+        for (File file : allFiles) {
+            String fileName = file.getName().replace(".yml", "").replace(".yaml", "");
+            if (fileName.equalsIgnoreCase(name)) {
+                return migrateFile(file, notifier);
+            }
         }
-        if (!file.exists()) {
-            return false;
-        }
-
-        return migrateFile(file, notifier);
+        return false;
     }
 
     private boolean migrateFile(@NotNull File sourceFile, @Nullable Player notifier) {
@@ -138,9 +130,10 @@ public final class MenuMigrator {
             ourConfig.save(outputFile);
             log(notifier, "&#00FF7FMigrated '" + menuName + "' successfully.");
             return true;
-        } catch (IOException e) {
+        } catch (Exception e) {
             log(notifier, "&#FF474DFailed to migrate '" + menuName + "': " + e.getMessage());
             plugin.getLogger().warning("Migration failed for " + menuName + ": " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
@@ -156,6 +149,10 @@ public final class MenuMigrator {
             out.set("command", cmd);
         } else if (openCmd instanceof List<?> cmds && !cmds.isEmpty()) {
             out.set("command", cmds.getFirst().toString());
+            if (cmds.size() > 1) {
+                List<String> aliases = cmds.stream().skip(1).map(Object::toString).toList();
+                out.set("command_aliases", aliases);
+            }
         }
 
         out.set("register_command", dm.getBoolean("register_command", true));
@@ -334,13 +331,20 @@ public final class MenuMigrator {
 
         String type = "player";
         String value = action;
+        boolean matched = false;
 
         for (Map.Entry<String, String> entry : DM_ACTION_PREFIXES.entrySet()) {
             if (action.startsWith(entry.getKey())) {
                 type = entry.getValue();
                 value = action.substring(entry.getKey().length());
+                matched = true;
                 break;
             }
+        }
+
+        if (!matched && (action.startsWith("&") || action.startsWith("§") || action.startsWith("#") || action.startsWith("<"))) {
+            type = "msg";
+            value = action;
         }
 
         if (delay == 0 && chance >= 100) {
@@ -453,6 +457,25 @@ public final class MenuMigrator {
 
     private @NotNull String convertRequirementType(@NotNull String dmType) {
         return dmType.toLowerCase().replace(" ", "_");
+    }
+
+    private @NotNull List<File> findYamlFiles(@NotNull File directory) {
+        List<File> result = new ArrayList<>();
+        File[] entries = directory.listFiles();
+        if (entries == null) {
+            return result;
+        }
+        for (File entry : entries) {
+            if (entry.isDirectory()) {
+                result.addAll(findYamlFiles(entry));
+                continue;
+            }
+            String name = entry.getName();
+            if (name.endsWith(".yml") || name.endsWith(".yaml")) {
+                result.add(entry);
+            }
+        }
+        return result;
     }
 
     private void log(@Nullable Player player, @NotNull String message) {

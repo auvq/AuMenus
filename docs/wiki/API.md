@@ -1,6 +1,6 @@
 # Developer API
 
-Other plugins can open menus, register custom actions and requirements, and listen to menu events through the AuMenus API.
+Other plugins can open menus, register custom actions and requirements, and listen to menu events.
 
 ## Dependency Setup
 
@@ -36,7 +36,7 @@ dependencies {
 
 Replace `VERSION` with the release tag or commit hash.
 
-Add AuMenus as a soft dependency in your `plugin.yml` or `paper-plugin.yml`:
+Add AuMenus as a soft dependency in `plugin.yml` or `paper-plugin.yml`:
 
 ```yaml
 softdepend:
@@ -45,54 +45,38 @@ softdepend:
 
 ## AuMenusAPI
 
-The `AuMenusAPI` class provides static methods for common operations.
-
-### Opening menus
-
 ```java
 import me.auvq.aumenus.api.AuMenusAPI;
 
-// Open a menu for a player
+// Open a menu
 AuMenusAPI.openMenu(player, "shop");
 
-// Open a menu with arguments
+// Open with arguments
 AuMenusAPI.openMenu(player, "profile", Map.of("player_name", "Steve"));
-```
 
-### Querying menus
-
-```java
-// Get a menu by name
+// Query menus
 Optional<Menu> menu = AuMenusAPI.getMenu("shop");
-
-// Get all loaded menus
 Collection<Menu> allMenus = AuMenusAPI.getAllMenus();
-
-// Check if a player has an AuMenus menu open
 boolean inMenu = AuMenusAPI.isInMenu(player);
 ```
 
 ## Custom Actions
 
-Register a custom action type that can be used in menu configs.
-
 ```java
-import me.auvq.aumenus.api.AuMenusAPI;
-
 AuMenusAPI.registerAction("heal", (player, value) -> {
     double amount = Double.parseDouble(value);
     player.setHealth(Math.min(player.getMaxHealth(), player.getHealth() + amount));
 });
 ```
 
-Usage in a menu config:
+Config usage:
 
 ```yaml
 on_click:
   - heal: 10
 ```
 
-The `ActionExecutor` functional interface:
+The `ActionExecutor` interface:
 
 ```java
 @FunctionalInterface
@@ -103,19 +87,15 @@ public interface ActionExecutor {
 
 ## Custom Requirements
 
-Register a custom requirement type.
-
 ```java
-import me.auvq.aumenus.api.AuMenusAPI;
-
 AuMenusAPI.registerRequirement("has_playtime", (player, config) -> {
     int requiredHours = ((Number) config.get("hours")).intValue();
-    int actualHours = getPlaytimeHours(player); // your logic
+    int actualHours = getPlaytimeHours(player);
     return actualHours >= requiredHours;
 });
 ```
 
-Usage in a menu config:
+Config usage:
 
 ```yaml
 click_require:
@@ -127,7 +107,7 @@ click_require:
         - msg: "&cYou need 10 hours of playtime!"
 ```
 
-The `RequirementEvaluator` functional interface:
+The `RequirementEvaluator` interface:
 
 ```java
 @FunctionalInterface
@@ -136,57 +116,44 @@ public interface RequirementEvaluator {
 }
 ```
 
-The `config` map contains all keys from the check's YAML section (excluding `type`, `deny`, `success`, and `optional`).
+The `config` map contains all keys from the check's YAML section (excluding `type`, `deny`, `success`, `optional`).
 
 ## Events
 
-AuMenus fires custom events that other plugins can listen to.
-
 ### MenuOpenEvent
 
-Fired when a menu is about to open. Cancellable.
+Fired before a menu opens. Cancellable.
 
 ```java
-import me.auvq.aumenus.api.event.MenuOpenEvent;
-
 @EventHandler
 public void onMenuOpen(MenuOpenEvent event) {
     Player player = event.getPlayer();
     Menu menu = event.getMenu();
-    String menuName = menu.getName();
 
-    if (menuName.equals("vip_shop") && !player.hasPermission("vip")) {
+    if (menu.getName().equals("vip_shop") && !player.hasPermission("vip")) {
         event.setCancelled(true);
-        player.sendMessage("VIP only!");
     }
 }
 ```
 
 ### MenuCloseEvent
 
-Fired when a menu is closed. Not cancellable. Not fired during plugin reload or when transitioning between menus.
+Fired when a menu closes. Not cancellable. Not fired during reload or menu transitions.
 
 ```java
-import me.auvq.aumenus.api.event.MenuCloseEvent;
-
 @EventHandler
 public void onMenuClose(MenuCloseEvent event) {
     Player player = event.getPlayer();
     Menu menu = event.getMenu();
-    // Handle close
 }
 ```
 
-## Accessing Plugin Internals
+## Plugin Internals
 
-For advanced use cases, you can access the plugin instance directly:
+For advanced use:
 
 ```java
-import me.auvq.aumenus.AuMenus;
-
 AuMenus plugin = AuMenus.getInstance();
-
-// Access registries
 plugin.getMenuRegistry();
 plugin.getActionRegistry();
 plugin.getRequirementRegistry();
@@ -194,4 +161,4 @@ plugin.getMetaStore();
 plugin.getHookProvider();
 ```
 
-Note that internal APIs may change between versions. The `AuMenusAPI` static methods are the stable public API surface.
+Internal APIs may change between versions. The `AuMenusAPI` static methods are the stable surface.

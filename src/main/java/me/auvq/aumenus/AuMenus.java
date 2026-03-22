@@ -33,6 +33,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -287,7 +288,8 @@ public final class AuMenus extends JavaPlugin {
             if (commandMap.getCommand(cmd) != null) {
                 continue;
             }
-            commandMap.register("aumenus", new Command(cmd) {
+            List<String> allAliases = new ArrayList<>(menu.getCommandAliases());
+            Command menuCommand = new Command(cmd, "", "/" + cmd, allAliases) {
                 @Override
                 public boolean execute(@NotNull CommandSender sender, @NotNull String label, String[] args) {
                     if (!(sender instanceof Player player)) {
@@ -301,7 +303,8 @@ public final class AuMenus extends JavaPlugin {
                     openMenu(player, menu, menuArgs);
                     return true;
                 }
-            });
+            };
+            commandMap.register("aumenus", menuCommand);
         }
 
         for (Player player : Bukkit.getOnlinePlayers()) {

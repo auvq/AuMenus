@@ -17,7 +17,8 @@ import java.util.List;
 public enum ActionType {
 
     PLAYER(List.of("player", "p"), (player, value) -> {
-        player.chat("/" + value);
+        player.getScheduler().run(AuMenus.getInstance(), task ->
+                player.chat("/" + value), null);
     }),
 
     CONSOLE(List.of("console", "c"), (player, value) -> {

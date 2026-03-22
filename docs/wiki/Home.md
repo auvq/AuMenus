@@ -4,38 +4,35 @@ AuMenus is a lightweight, open-source GUI menu plugin for Paper and Folia 1.20.6
 
 ## Features
 
-- Config-driven menus with YAML files
-- MiniMessage and legacy color code support
-- Full Folia compatibility out of the box
-- Pagination system for large item lists
+- YAML-based menu configuration
+- MiniMessage and legacy color codes (`&a`, `&#RRGGBB`)
+- Folia compatible out of the box
+- Pagination for large item lists
 - Conditional items with view requirements
 - Per-click-type actions (left, right, shift+left, shift+right, middle)
-- Anvil and chat input systems
+- Anvil and chat input collection
 - Persistent player metadata (PDC-backed)
 - Shorthand and full-form requirement syntax
 - Built-in placeholders (no PAPI required for basics)
 - PlaceholderAPI and Vault integration
-- DeluxeMenus migration tool
 - In-game menu editor
-- Developer API with custom action and requirement registration
-- BungeeCord server switching
+- Migration tool for existing menu files
+- Developer API with custom action/requirement registration
+- BungeeCord/Velocity server switching
 
 ## Requirements
 
 - Paper or Folia 1.20.6+
 - Java 21+
-- Optional: Vault (for economy/permissions), PlaceholderAPI (for external placeholders)
+- Optional: Vault (economy/permissions), PlaceholderAPI (external placeholders)
 
 ## Installation
 
-1. Download the AuMenus jar file.
-2. Place it in your server's `plugins/` folder.
-3. Start or restart your server.
-4. Default example menus are generated in `plugins/AuMenus/menus/`.
+Drop the AuMenus jar into your server's `plugins/` folder and restart. Example menus are generated in `plugins/AuMenus/menus/`.
 
 ## Quick Start
 
-After installation, try these commands:
+After installation:
 
 - `/shop` -- Opens the example shop menu
 - `/warps` -- Opens the example paginated warps menu
@@ -43,20 +40,17 @@ After installation, try these commands:
 - `/testreq` -- Opens the requirement test menu
 - `/testitems` -- Opens the item properties test menu
 
-All menus are defined as YAML files in `plugins/AuMenus/menus/`. Edit any file and run `/am reload` to apply changes.
+All menus are YAML files in `plugins/AuMenus/menus/`. Edit any file and run `/am reload` to apply changes.
 
 ## Wiki Pages
 
-- [Menu Options](Menu-Options.md) -- Menu-level configuration (title, size, commands, args, events)
-- [Item Properties](Item-Properties.md) -- All item configuration options (material, lore, enchantments, etc.)
-- [Actions](Actions.md) -- All action types (commands, messages, economy, sounds, etc.)
-- [Requirements](Requirements.md) -- Requirement system (permissions, money, items, comparators, etc.)
-- [Pagination](Pagination.md) -- Paginated menus with page_slots and page_items
-- [Input System](Input-System.md) -- Anvil input and chat input
-- [Commands](Commands.md) -- All plugin commands and permissions
-- [Meta System](Meta-System.md) -- Persistent player data storage and retrieval
-- [Placeholders](Placeholders.md) -- Built-in and PAPI placeholders
+- [Configuration](Configuration.md) -- Menu options and item properties
+- [Actions](Actions.md) -- All action types
+- [Requirements](Requirements.md) -- Requirement system
+- [Pagination](Pagination.md) -- Paginated menus
+- [Commands](Commands.md) -- Commands and permissions
+- [Placeholders](Placeholders.md) -- Placeholders and meta system
 - [Editor](Editor.md) -- In-game menu editor
-- [Migration](Migration.md) -- Migrating from DeluxeMenus
-- [API](API.md) -- Developer API for other plugins
+- [Migration](Migration.md) -- Migrating from other menu plugins
+- [API](API.md) -- Developer API
 - [FAQ](FAQ.md) -- Frequently asked questions

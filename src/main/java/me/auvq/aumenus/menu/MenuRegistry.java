@@ -19,12 +19,21 @@ public final class MenuRegistry {
         if (menu.getCommand() != null && !menu.getCommand().isEmpty()) {
             menusByCommand.put(menu.getCommand().toLowerCase(), menu);
         }
+        for (String alias : menu.getCommandAliases()) {
+            menusByCommand.put(alias.toLowerCase(), menu);
+        }
     }
 
     public void unregister(@NotNull String name) {
         Menu menu = menusByName.remove(name.toLowerCase());
-        if (menu != null && menu.getCommand() != null) {
+        if (menu == null) {
+            return;
+        }
+        if (menu.getCommand() != null) {
             menusByCommand.remove(menu.getCommand().toLowerCase());
+        }
+        for (String alias : menu.getCommandAliases()) {
+            menusByCommand.remove(alias.toLowerCase());
         }
     }
 

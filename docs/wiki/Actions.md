@@ -1,10 +1,10 @@
 # Actions
 
-Actions are executed in response to clicks, menu open/close events, requirement denials, and input submissions. They are defined as lists in YAML.
+Actions execute in response to clicks, menu open/close, requirement denials, and input submissions.
 
-## Action Syntax
+## Syntax
 
-### Simple string format
+String format:
 
 ```yaml
 on_click:
@@ -13,7 +13,7 @@ on_click:
   - close
 ```
 
-### Map format (with modifiers)
+Map format with modifiers:
 
 ```yaml
 on_click:
@@ -24,245 +24,71 @@ on_click:
 
 ## Modifiers
 
-### delay
+| Key      | Description |
+|----------|-------------|
+| `delay`  | Ticks before execution. 20 ticks = 1 second. |
+| `chance` | Percentage (0-100) that the action fires. Consecutive `chance` actions form a group -- only one fires per group. A non-chance action resets the group. |
 
-Delay in ticks before the action executes. 20 ticks = 1 second.
+## Action Types
 
-```yaml
-- msg: "&aThis appears after 2 seconds"
-  delay: 40
-```
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `player` | `p` | Run command as player |
+| `console` | `c` | Run command from console. Placeholders resolved. |
+| `commandevent` | | Dispatch command through chat processor (triggers PlayerCommandPreprocessEvent) |
+| `msg` | `message` | Send message to player |
+| `minimessage` | | Send MiniMessage-formatted message |
+| `broadcast` | | Send message to all online players |
+| `minibroadcast` | | Broadcast MiniMessage-formatted message |
+| `chat` | | Make player send a chat message |
+| `json` | | Send raw JSON text component to player |
+| `jsonbroadcast` | | Broadcast raw JSON text component |
+| `open` | `openguimenu`, `openmenu` | Open another menu. Pass args separated by spaces. |
+| `close` | | Close current menu |
+| `refresh` | | Re-render current menu without closing |
+| `take_money` | `takemoney` | Withdraw from player balance (Vault) |
+| `give_money` | `givemoney` | Deposit to player balance (Vault) |
+| `give_exp` | `giveexp` | Give exp points, or levels with `L` suffix |
+| `take_exp` | `takeexp` | Remove exp points, or levels with `L` suffix |
+| `give_perm` | `givepermission` | Grant permission (Vault) |
+| `take_perm` | `takepermission` | Remove permission (Vault) |
+| `sound` | | Play sound. Optional volume and pitch space-separated. |
+| `broadcast_sound` | `broadcastsound` | Play sound for all players |
+| `broadcast_sound_world` | `broadcastsoundworld` | Play sound for players in same world |
+| `connect` | | Send player to BungeeCord/Velocity server |
+| `meta` | | Manipulate persistent player data |
+| `placeholder` | | Evaluate a PAPI placeholder (triggers expansion side effects) |
+| `prev_page` | | Go to previous page in paginated menu |
+| `next_page` | | Go to next page in paginated menu |
+| `anvil_input` | | Open anvil GUI for text input |
+| `chat_input` | | Close menu and wait for chat message |
 
-### chance
+## Sound Format
 
-Percentage chance (0-100) that the action executes. When multiple consecutive actions have `chance` set, they form a chance group -- only one fires per group.
-
-```yaml
-- msg: "&a&lWIN!"
-  chance: 50
-- msg: "&c&lLOSE!"
-  chance: 50
-```
-
-In a chance group, once one action fires, the remaining chance actions in the group are skipped. A non-chance action resets the group.
-
-## Command Actions
-
-### player / p
-
-Runs a command as the player.
-
-```yaml
-- player: "spawn"
-- p: "home"
-```
-
-### console / c
-
-Runs a command from the server console. Placeholders like `%player%` are resolved.
-
-```yaml
-- console: "give %player% diamond 1"
-- c: "eco give %player% 100"
-```
-
-### commandevent
-
-Dispatches a command through the player chat processor, triggering PlayerCommandPreprocessEvent. Useful for commands that rely on event interception.
+Sound names use Minecraft sound keys. Underscores convert to dots automatically if no dots are present.
 
 ```yaml
-- commandevent: "/some_command"
+- sound: entity.experience_orb.pickup
+- sound: "entity.experience_orb.pickup 0.5 2.0"   # volume pitch
 ```
 
-## Message Actions
+## Experience Format
 
-### msg / message
-
-Sends a message to the player. Supports MiniMessage and legacy codes.
-
-```yaml
-- msg: "&aHello, %player%!"
-- message: "&#00FF7FSuccess!"
-```
-
-### minimessage
-
-Sends a MiniMessage-formatted message.
-
-```yaml
-- minimessage: "<rainbow>Rainbow text!</rainbow>"
-```
-
-### broadcast
-
-Sends a message to all online players.
-
-```yaml
-- broadcast: "&e%player% purchased a diamond!"
-```
-
-### minibroadcast
-
-Broadcasts a MiniMessage-formatted message.
-
-```yaml
-- minibroadcast: "<bold>Server announcement!</bold>"
-```
-
-### chat
-
-Makes the player send a chat message (not a command).
-
-```yaml
-- chat: "Hello everyone!"
-```
-
-### json
-
-Sends a raw JSON text component to the player.
-
-```yaml
-- json: '{"text":"Click here","clickEvent":{"action":"open_url","value":"https://example.com"}}'
-```
-
-### jsonbroadcast
-
-Broadcasts a raw JSON text component to all players.
-
-```yaml
-- jsonbroadcast: '{"text":"Server message"}'
-```
-
-## Menu Control Actions
-
-### open / openguimenu
-
-Opens another menu. Optionally pass arguments separated by spaces.
-
-```yaml
-- open: shop
-- open: "profile Steve"
-- open: "other_menu arg1 arg2"
-```
-
-### close
-
-Closes the player's current menu.
-
-```yaml
-- close
-```
-
-### refresh
-
-Re-renders the current menu without closing it. Useful after actions that change state.
-
-```yaml
-- refresh
-```
-
-## Economy Actions
-
-Require Vault to be installed and an economy provider registered.
-
-### take_money
-
-Withdraws money from the player's balance.
-
-```yaml
-- take_money: 100
-```
-
-### give_money
-
-Deposits money into the player's balance.
-
-```yaml
-- give_money: 50
-```
-
-## Experience Actions
-
-### give_exp
-
-Gives experience points, or levels if the value ends with `L`.
+Append `L` for levels instead of points:
 
 ```yaml
 - give_exp: 200       # 200 experience points
 - give_exp: 10L       # 10 levels
 ```
 
-### take_exp
-
-Removes experience points or levels.
+## Open Menu with Arguments
 
 ```yaml
-- take_exp: 100       # 100 experience points
-- take_exp: 5L        # 5 levels
-```
-
-## Permission Actions
-
-Require Vault with a permissions provider.
-
-### give_perm
-
-Grants a permission to the player.
-
-```yaml
-- give_perm: "some.permission"
-```
-
-### take_perm
-
-Removes a permission from the player.
-
-```yaml
-- take_perm: "some.permission"
-```
-
-## Sound Actions
-
-### sound
-
-Plays a sound for the player. Optionally specify volume and pitch (space-separated).
-
-```yaml
-- sound: entity.experience_orb.pickup
-- sound: "entity.experience_orb.pickup 0.5 2.0"
-```
-
-Sound names use Minecraft sound keys. Underscores are automatically converted to dots if the name does not already contain dots.
-
-### broadcast_sound
-
-Plays a sound for all online players.
-
-```yaml
-- broadcast_sound: entity.ender_dragon.death
-```
-
-### broadcast_sound_world
-
-Plays a sound for all players in the same world as the triggering player.
-
-```yaml
-- broadcast_sound_world: entity.lightning_bolt.thunder
-```
-
-## Network Actions
-
-### connect
-
-Sends the player to another BungeeCord/Velocity server.
-
-```yaml
-- connect: "lobby"
+- open: "profile Steve"
+- open: "other_menu arg1 arg2"
 ```
 
 ## Meta Actions
-
-Manipulates persistent player data. See [Meta System](Meta-System.md).
 
 ```yaml
 - meta: set coins INTEGER 100
@@ -272,39 +98,9 @@ Manipulates persistent player data. See [Meta System](Meta-System.md).
 - meta: remove coins
 ```
 
-## Placeholder Action
+See [Placeholders](Placeholders.md) for the meta system details.
 
-### placeholder
-
-Evaluates a PlaceholderAPI placeholder. Useful for triggering expansion side effects.
-
-```yaml
-- placeholder: "%some_expansion_trigger%"
-```
-
-## Pagination Actions
-
-### prev_page
-
-Navigates to the previous page in a paginated menu. Does nothing if already on page 1.
-
-```yaml
-- prev_page
-```
-
-### next_page
-
-Navigates to the next page. Does nothing if already on the last page.
-
-```yaml
-- next_page
-```
-
-## Input Actions
-
-### anvil_input
-
-Opens an anvil GUI for text input. See [Input System](Input-System.md).
+## Anvil Input
 
 ```yaml
 - anvil_input:
@@ -322,9 +118,17 @@ Opens an anvil GUI for text input. See [Input System](Input-System.md).
       deny: "&cMust be 3-16 characters!"
 ```
 
-### chat_input
+| Key           | Description |
+|---------------|-------------|
+| `title`       | Anvil GUI title. Default: `"Input"`. |
+| `placeholder` | Default text in rename field. |
+| `on_submit`   | Actions when player clicks result slot. `{input}` = typed text. |
+| `on_cancel`   | Actions when player closes without submitting. |
+| `require`     | Requirement to validate input. Anvil stays open on failure. |
 
-Closes the menu and waits for a chat message. See [Input System](Input-System.md).
+## Chat Input
+
+Close the menu first, then use `chat_input`:
 
 ```yaml
 - close
@@ -340,23 +144,13 @@ Closes the menu and waits for a chat message. See [Input System](Input-System.md
       - msg: "&cTimed out."
 ```
 
-## Complete Example
+| Key           | Description |
+|---------------|-------------|
+| `prompt`      | Message sent to player. Default: `"Enter input:"`. |
+| `timeout`     | Seconds before timeout. 0 = no timeout. Default: 0. |
+| `cancel_word` | Word to cancel. Default: `"cancel"`. Case-insensitive. |
+| `on_submit`   | Actions on input. `{input}` = typed message. |
+| `on_cancel`   | Actions on cancel word. |
+| `on_timeout`  | Actions on timeout. |
 
-```yaml
-items:
-  shop_item:
-    material: DIAMOND
-    slot: 13
-    name: "&bDiamond"
-    lore:
-      - "&7Price: &a$100"
-    on_click:
-      - take_money: 100
-      - console: "give %player% diamond 1"
-      - msg: "&aPurchased!"
-      - sound: entity.experience_orb.pickup
-      - refresh
-    click_require:
-      money: 100
-      deny: "&cYou need $100! Missing: ${remaining}"
-```
+Only one chat input can be pending per player at a time.

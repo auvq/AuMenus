@@ -23,6 +23,8 @@ public final class Menu {
     private final @NotNull InventoryType inventoryType = InventoryType.CHEST;
     private final @Nullable String command;
     @Builder.Default
+    private final @NotNull List<String> commandAliases = List.of();
+    @Builder.Default
     private final boolean registerCommand = true;
     private final int updateInterval;
 

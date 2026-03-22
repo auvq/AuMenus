@@ -24,6 +24,8 @@ public final class Util {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Pattern HEX_PATTERN = Pattern.compile("&#([0-9a-fA-F]{6})");
     private static final Pattern LEGACY_CODE_PATTERN = Pattern.compile("&([0-9a-fk-orA-FK-OR])");
+    private static final Pattern SECTION_HEX_PATTERN = Pattern.compile("§x(§[0-9a-fA-F]){6}");
+    private static final Pattern SECTION_CODE_PATTERN = Pattern.compile("§([0-9a-fk-orA-FK-OR])");
 
     private Util() {}
 
@@ -33,6 +35,17 @@ public final class Util {
         }
 
         String result = input;
+
+        Matcher sectionHexMatcher = SECTION_HEX_PATTERN.matcher(result);
+        StringBuilder sectionHexBuilder = new StringBuilder();
+        while (sectionHexMatcher.find()) {
+            String hex = sectionHexMatcher.group().replaceAll("§[xX]|§", "");
+            sectionHexMatcher.appendReplacement(sectionHexBuilder, "<color:#" + hex + ">");
+        }
+        sectionHexMatcher.appendTail(sectionHexBuilder);
+        result = sectionHexBuilder.toString();
+
+        result = SECTION_CODE_PATTERN.matcher(result).replaceAll("&$1");
 
         Matcher hexMatcher = HEX_PATTERN.matcher(result);
         StringBuilder hexBuilder = new StringBuilder();

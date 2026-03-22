@@ -87,6 +87,7 @@ public final class MenuLoader {
             }
 
             String command = config.getString("command");
+            List<String> commandAliases = config.getStringList("command_aliases");
             boolean registerCommand = config.getBoolean("register_command", true);
             int updateInterval = config.getInt("update_interval",
                     plugin.getConfig().getInt("default_update_interval", 20));
@@ -109,6 +110,7 @@ public final class MenuLoader {
                     .size(size)
                     .inventoryType(invType)
                     .command(command)
+                    .commandAliases(commandAliases)
                     .registerCommand(registerCommand)
                     .updateInterval(updateInterval)
                     .args(args)
