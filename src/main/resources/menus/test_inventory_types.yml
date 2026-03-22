@@ -1,0 +1,30 @@
+title: "<dark_gray>ʜᴏᴘᴘᴇʀ ᴍᴇɴᴜ</dark_gray>"
+command: testhop
+type: HOPPER
+items:
+  info:
+    material: PAPER
+    slot: 0
+    name: "&6&lHopper Menu"
+    lore:
+      - "<dark_gray>ɪɴᴠᴇɴᴛᴏʀʏ ᴛʏᴘᴇ</dark_gray>"
+      - ""
+      - "&#B6D0E2Type: &fHOPPER"
+      - "&#B6D0E2Slots: &f5"
+
+  test:
+    material: DIAMOND
+    slot: 2
+    name: "&b&lHopper Menu Item"
+    lore:
+      - "&#B6D0E2This is a HOPPER inventory type"
+      - "&e&l➜ &fClick to open dispenser menu"
+    on_click:
+      - open: test_dispenser
+
+  close:
+    material: BARRIER
+    slot: 4
+    name: "&c&lClose"
+    on_click:
+      - close

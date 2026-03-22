@@ -1,0 +1,9 @@
+name: AuMenus
+version: ${version}
+main: me.auvq.aumenus.AuMenus
+api-version: "1.21.1"
+folia-supported: true
+description: Lightweight GUI menu plugin for Paper/Folia
+authors: [auvq]
+website: https://github.com/auvq/AuMenus
+softdepend: [Vault, PlaceholderAPI]

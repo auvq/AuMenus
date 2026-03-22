@@ -1,0 +1,10 @@
+# AuMenus Configuration
+
+debug: false
+check_updates: true
+
+# Default placeholder refresh interval (ticks) for menus without update_interval set
+default_update_interval: 20
+
+# Click cooldown in ticks to prevent spam-clicking (2 = 100ms)
+click_cooldown: 2

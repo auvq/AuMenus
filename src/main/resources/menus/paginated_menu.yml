@@ -1,0 +1,417 @@
+# AuMenus - Paginated Menu Example
+
+title: "<dark_gray>ᴡᴀʀᴘs <white>{page}/{max_page}</white></dark_gray>"
+command: warps
+size: 54
+
+page_slots: [10-16, 19-25, 28-34]
+
+page_items:
+  spawn:
+    material: GRASS_BLOCK
+    name: "&a&lSpawn"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Teleport to the server spawn."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp spawn"
+      - close
+
+  nether:
+    material: NETHERRACK
+    name: "&c&lNether"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Teleport to the nether hub."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp nether"
+      - close
+
+  end:
+    material: END_STONE
+    name: "&5&lThe End"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Teleport to the end gateway."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp end"
+      - close
+
+  pvp_arena:
+    material: IRON_SWORD
+    name: "&c&lPvP Arena"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Fight other players."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp pvp"
+      - close
+
+  mines:
+    material: IRON_PICKAXE
+    name: "&6&lMines"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Mine ores for profit."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp mines"
+      - close
+
+  farm:
+    material: WHEAT
+    name: "&e&lFarm"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Automatic crop farms."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp farm"
+      - close
+
+  market:
+    material: EMERALD
+    name: "&a&lMarket"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Buy and sell items."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp market"
+      - close
+
+  crates:
+    material: CHEST
+    name: "&b&lCrates"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Open loot crates."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp crates"
+      - close
+
+  boss_arena:
+    material: WITHER_SKELETON_SKULL
+    name: "&4&lBoss Arena"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Challenge the boss."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp boss"
+      - close
+
+  parkour:
+    material: RABBIT_FOOT
+    name: "&d&lParkour"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Test your jumping skills."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp parkour"
+      - close
+
+  enchanter:
+    material: ENCHANTING_TABLE
+    name: "&9&lEnchanter"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Enchant your gear."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp enchant"
+      - close
+
+  casino:
+    material: GOLD_BLOCK
+    name: "&6&lCasino"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Try your luck."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp casino"
+      - close
+
+  fishing:
+    material: FISHING_ROD
+    name: "&b&lFishing Pond"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Catch rare fish."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp fishing"
+      - close
+
+  shop:
+    material: VILLAGER_SPAWN_EGG
+    name: "&a&lShop"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Server shop."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp shop"
+      - close
+
+  dungeon:
+    material: SPAWNER
+    name: "&8&lDungeon"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Explore the dungeon."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp dungeon"
+      - close
+
+  vip_lounge:
+    material: DIAMOND_BLOCK
+    name: "&b&lVIP Lounge"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Exclusive VIP area."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp vip"
+      - close
+
+  creative:
+    material: COMMAND_BLOCK
+    name: "&d&lCreative World"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Build freely."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp creative"
+      - close
+
+  skyblock:
+    material: OAK_SAPLING
+    name: "&a&lSkyblock"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Start your island."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp skyblock"
+      - close
+
+  events:
+    material: FIREWORK_ROCKET
+    name: "&e&lEvents"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Current server events."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp events"
+      - close
+
+  tutorial:
+    material: BOOK
+    name: "&f&lTutorial"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Learn the basics."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp tutorial"
+      - close
+
+  survival:
+    material: STONE_SWORD
+    name: "&7&lSurvival"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Vanilla survival world."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp survival"
+      - close
+
+  resource_world:
+    material: DIAMOND_ORE
+    name: "&b&lResource World"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Gather resources freely."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp resource"
+      - close
+
+  mob_arena:
+    material: ZOMBIE_HEAD
+    name: "&2&lMob Arena"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Fight waves of mobs."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp mobarena"
+      - close
+
+  auction_house:
+    material: GOLD_INGOT
+    name: "&6&lAuction House"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Buy and sell player items."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp ah"
+      - close
+
+  builders_world:
+    material: BRICKS
+    name: "&f&lBuilders World"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Showcase your builds."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp builders"
+      - close
+
+  hunger_games:
+    material: APPLE
+    name: "&c&lHunger Games"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Last player standing wins."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp hg"
+      - close
+
+  spleef:
+    material: DIAMOND_SHOVEL
+    name: "&b&lSpleef"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Break blocks under opponents."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp spleef"
+      - close
+
+  bedwars:
+    material: RED_BED
+    name: "&c&lBedwars"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Protect your bed."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp bedwars"
+      - close
+
+  skywars:
+    material: FEATHER
+    name: "&e&lSkywars"
+    lore:
+      - "<dark_gray>ᴡᴀʀᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Fight in the sky."
+      - ""
+      - "&e&l➜ &fClick to Teleport"
+    on_click:
+      - player: "warp skywars"
+      - close
+
+items:
+  border:
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "
+    hide_tooltip: true
+    slots: [0-9, 17-18, 26-27, 35-44, 45-47, 51-53]
+
+  previous_page:
+    material: ARROW
+    slot: 48
+    name: "&e&l← &fPrevious Page"
+    lore:
+      - "&#B6D0E2Page {page}/{max_page}"
+    on_click:
+      - prev_page
+
+  next_page:
+    material: ARROW
+    slot: 50
+    name: "&e&lNext Page &e&l→"
+    lore:
+      - "&#B6D0E2Page {page}/{max_page}"
+    on_click:
+      - next_page
+
+  close:
+    material: FLOWER_BANNER_PATTERN
+    slot: 49
+    name: "&eExit Menu ↓"
+    on_click:
+      - close

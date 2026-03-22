@@ -1,0 +1,324 @@
+# Tests: all action types, delays, chances, click types, meta system
+
+title: "<dark_gray>ᴛᴇsᴛ ᴀᴄᴛɪᴏɴs</dark_gray>"
+command: testact
+size: 54
+
+items:
+  border:
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "
+    hide_tooltip: true
+    slots: [0-9, 17-18, 35-44, 45-53]
+
+  # Player command
+  player_cmd:
+    material: COMMAND_BLOCK
+    slot: 10
+    name: "&6&lPlayer Command"
+    lore:
+      - "<dark_gray>ᴀᴄᴛɪᴏɴs</dark_gray>"
+      - ""
+      - "&#B6D0E2Runs &f/help &7as you"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - player: "help"
+
+  # Console command
+  console_cmd:
+    material: COMMAND_BLOCK_MINECART
+    slot: 11
+    name: "&6&lConsole Command"
+    lore:
+      - "<dark_gray>ᴀᴄᴛɪᴏɴs</dark_gray>"
+      - ""
+      - "&#B6D0E2Gives you 1 diamond"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - console: "give %player% diamond 1"
+      - msg: "&#00FF7FDiamond given via console!"
+
+  # Message types
+  msg_test:
+    material: WRITABLE_BOOK
+    slot: 12
+    name: "&6&lMessages"
+    lore:
+      - "<dark_gray>ᴀᴄᴛɪᴏɴs</dark_gray>"
+      - ""
+      - "&#B6D0E2Tests msg + minimessage"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - msg: "&#B6D0E2This is a &fregular &7message."
+      - minimessage: "<rainbow>This is a MiniMessage rainbow!</rainbow>"
+
+  # Sound
+  sound_test:
+    material: NOTE_BLOCK
+    slot: 13
+    name: "&6&lSound"
+    lore:
+      - "<dark_gray>ᴀᴄᴛɪᴏɴs</dark_gray>"
+      - ""
+      - "&#B6D0E2Plays a sound"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - sound: entity.experience_orb.pickup
+      - msg: "&#00FF7FSound played!"
+
+  coinflip:
+    material: CLOCK
+    slot: 14
+    name: "&6&lCoinflip"
+    lore:
+      - "<dark_gray>ᴄᴏɪɴғʟɪᴘ</dark_gray>"
+      - ""
+      - "&#B6D0E250/50 win or lose"
+      - "&#B6D0E22 second delay"
+      - ""
+      - "&e&l➜ &fClick to Flip"
+    on_click:
+      - msg: "&#00FF7F&lWIN! &fYou won the coinflip!"
+        delay: 40
+    click_require:
+      type: ">="
+      input: "%random_100%"
+      output: "50"
+      deny: "&#FF474D&lLOSE! &fYou lost the coinflip!"
+
+  # Open another menu
+  open_menu:
+    material: ENDER_CHEST
+    slot: 15
+    name: "&6&lOpen Menu"
+    lore:
+      - "<dark_gray>ᴀᴄᴛɪᴏɴs</dark_gray>"
+      - ""
+      - "&#B6D0E2Opens the shop menu"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - open: basic_menu
+
+  # Close
+  close_test:
+    material: BARRIER
+    slot: 16
+    name: "&c&lClose"
+    lore:
+      - "<dark_gray>ᴀᴄᴛɪᴏɴs</dark_gray>"
+      - ""
+      - "&#B6D0E2Closes this menu"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - msg: "&#B6D0E2Menu closed!"
+      - close
+
+  # Multi-click types
+  click_types:
+    material: COMPASS
+    slot: 22
+    name: "&6&lClick Types"
+    lore:
+      - "<dark_gray>ᴄʟɪᴄᴋ ᴛʏᴘᴇs</dark_gray>"
+      - ""
+      - "&#B6D0E2Left: &fMessage"
+      - "&#B6D0E2Right: &fSound"
+      - "&#B6D0E2Shift+Left: &fBroadcast"
+      - "&#B6D0E2Shift+Right: &fRefresh"
+      - ""
+      - "&e&l➜ &fTry all clicks"
+    on_left_click:
+      - msg: "&#00FF7FLeft click!"
+    on_right_click:
+      - sound: block.note_block.pling
+      - msg: "&#00FF7FRight click! Sound played."
+    on_shift_left_click:
+      - broadcast: "&#B6D0E2%player% &fused shift+left click!"
+    on_shift_right_click:
+      - refresh
+      - msg: "&#00FF7FMenu refreshed via shift+right click!"
+
+  # Meta set
+  meta_set:
+    material: EMERALD
+    slot: 19
+    name: "&6&lMeta: Set"
+    lore:
+      - "<dark_gray>ᴍᴇᴛᴀ</dark_gray>"
+      - ""
+      - "&#B6D0E2Sets &ftest_counter &7to &a100"
+      - ""
+      - "&e&l➜ &fClick to Set"
+    on_click:
+      - meta: set test_counter INTEGER 100
+      - msg: "&#00FF7FSet test_counter = 100"
+
+  # Meta add
+  meta_add:
+    material: EMERALD_BLOCK
+    slot: 20
+    name: "&6&lMeta: Add"
+    lore:
+      - "<dark_gray>ᴍᴇᴛᴀ</dark_gray>"
+      - ""
+      - "&#B6D0E2Adds &f10 &7to &ftest_counter"
+      - ""
+      - "&e&l➜ &fClick to Add"
+    on_click:
+      - meta: add test_counter INTEGER 10
+      - msg: "&#00FF7FAdded 10 to test_counter"
+
+  # Meta switch (boolean toggle)
+  meta_switch:
+    material: LEVER
+    slot: 21
+    name: "&6&lMeta: Toggle"
+    lore:
+      - "<dark_gray>ᴍᴇᴛᴀ</dark_gray>"
+      - ""
+      - "&#B6D0E2Toggles &ftest_toggle"
+      - ""
+      - "&e&l➜ &fClick to Toggle"
+    on_click:
+      - meta: switch test_toggle BOOLEAN
+      - msg: "&#00FF7FToggled! Use &f/am meta <your name> get test_toggle BOOLEAN &#00FF7Fto check value."
+
+  # Economy actions
+  eco_give:
+    material: GOLD_BLOCK
+    slot: 28
+    name: "&6&lGive Money"
+    lore:
+      - "<dark_gray>ᴇᴄᴏɴᴏᴍʏ</dark_gray>"
+      - ""
+      - "&#B6D0E2Gives you &a$100"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - give_money: 100
+      - msg: "&#00FF7FReceived &a$100&#00FF7F!"
+
+  eco_take:
+    material: GOLD_INGOT
+    slot: 29
+    name: "&6&lTake Money"
+    lore:
+      - "<dark_gray>ᴇᴄᴏɴᴏᴍʏ</dark_gray>"
+      - ""
+      - "&#B6D0E2Takes &a$50"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - take_money: 50
+      - msg: "&#FF474DLost &a$50&#FF474D!"
+    click_require:
+      money: 50
+      deny: "&#FF474DYou need &a$50&#FF474D! Missing: &a${remaining}"
+
+  # Exp actions
+  exp_give:
+    material: EXPERIENCE_BOTTLE
+    slot: 30
+    name: "&6&lGive Exp"
+    lore:
+      - "<dark_gray>ᴇxᴘᴇʀɪᴇɴᴄᴇ</dark_gray>"
+      - ""
+      - "&#B6D0E2Gives &f5 levels"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - give_exp: 5L
+      - msg: "&#00FF7FReceived 5 levels!"
+
+  exp_take:
+    material: GLASS_BOTTLE
+    slot: 31
+    name: "&6&lTake Exp"
+    lore:
+      - "<dark_gray>ᴇxᴘᴇʀɪᴇɴᴄᴇ</dark_gray>"
+      - ""
+      - "&#B6D0E2Takes &f2 levels"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - take_exp: 2L
+      - msg: "&#FF474DLost 2 levels!"
+    click_require:
+      exp: 2
+      level: true
+      deny: "&#FF474DYou need at least &f2 levels&#FF474D!"
+
+  # Chat input
+  chat_input_test:
+    material: OAK_SIGN
+    slot: 33
+    name: "&6&lChat Input"
+    lore:
+      - "<dark_gray>ɪɴᴘᴜᴛ</dark_gray>"
+      - ""
+      - "&#B6D0E2Type in chat after clicking"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - close
+      - chat_input:
+          prompt: "&#B6D0E2Type a message in chat. Type &ccancel &#B6D0E2to cancel."
+          timeout: 15
+          cancel_word: "cancel"
+          on_submit:
+            - msg: "&#00FF7FYou typed: &f{input}"
+            - open: test_actions
+          on_cancel:
+            - msg: "&#B6D0E2Cancelled."
+            - open: test_actions
+          on_timeout:
+            - msg: "&#FF474DTimed out!"
+            - open: test_actions
+
+  # Middle click test
+  middle_click_test:
+    material: ENDER_EYE
+    slot: 26
+    name: "&5&lMiddle Click Test"
+    lore:
+      - "<dark_gray>ᴄʟɪᴄᴋ ᴛʏᴘᴇs</dark_gray>"
+      - ""
+      - "&#B6D0E2Left: &fLeft click message"
+      - "&#B6D0E2Middle: &fMiddle click message"
+      - "&#B6D0E2Right: &fRight click message"
+      - ""
+      - "&e&l➜ &fTry all clicks"
+    on_left_click:
+      - msg: "&#00FF7FLeft click detected!"
+    on_middle_click:
+      - msg: "&#FFFF8FMiddle click detected!"
+    on_right_click:
+      - msg: "&#FF474DRight click detected!"
+
+  # Anvil input
+  anvil_input_test:
+    material: ANVIL
+    slot: 34
+    name: "&6&lAnvil Input"
+    lore:
+      - "<dark_gray>ɪɴᴘᴜᴛ</dark_gray>"
+      - ""
+      - "&#B6D0E2Type in the anvil"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - anvil_input:
+          title: "Type something"
+          placeholder: "Hello world"
+          on_submit:
+            - msg: "&#00FF7FAnvil result: &f{input}"
+            - open: test_actions
+          on_cancel:
+            - msg: "&#B6D0E2Anvil cancelled."
+            - open: test_actions

@@ -1,0 +1,201 @@
+# Tests: all item properties, heads, armor trims, potions, banners, model data
+
+title: "<dark_gray>ᴛᴇsᴛ ɪᴛᴇᴍs</dark_gray>"
+command: testitems
+size: 54
+
+items:
+  border:
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "
+    hide_tooltip: true
+    slots: [0-9, 17-18, 26-27, 35-44, 45-53]
+
+  # Enchanted item with glint
+  enchanted:
+    material: DIAMOND_SWORD
+    slot: 10
+    name: "&b&lEnchanted Sword"
+    lore:
+      - "<dark_gray>ɪᴛᴇᴍ ᴘʀᴏᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2Enchantments + glint override"
+    enchantments:
+      - "sharpness;5"
+      - "unbreaking;3"
+    item_flags:
+      - HIDE_ENCHANTS
+      - HIDE_ATTRIBUTES
+
+  # Forced glint without enchant
+  glint_override:
+    material: STICK
+    slot: 11
+    name: "&e&lGlowing Stick"
+    lore:
+      - "<dark_gray>ɪᴛᴇᴍ ᴘʀᴏᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2enchantment_glint_override: true"
+    enchantment_glint_override: true
+
+  # Unbreakable
+  unbreakable_item:
+    material: IRON_PICKAXE
+    slot: 12
+    name: "&f&lUnbreakable Pick"
+    lore:
+      - "<dark_gray>ɪᴛᴇᴍ ᴘʀᴏᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2unbreakable: true"
+    unbreakable: true
+
+  # Custom amount
+  stacked:
+    material: ARROW
+    slot: 13
+    name: "&f&lStacked (32)"
+    lore:
+      - "<dark_gray>ɪᴛᴇᴍ ᴘʀᴏᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2amount: 32"
+    amount: 32
+
+  # Colored leather armor
+  leather:
+    material: LEATHER_CHESTPLATE
+    slot: 14
+    name: "&d&lPink Chestplate"
+    lore:
+      - "<dark_gray>ɪᴛᴇᴍ ᴘʀᴏᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2rgb: 255,105,180"
+    rgb: "255,105,180"
+    item_flags:
+      - HIDE_ATTRIBUTES
+
+  # Potion with custom color
+  potion:
+    material: POTION
+    slot: 15
+    name: "&c&lHealth Potion"
+    lore:
+      - "<dark_gray>ɪᴛᴇᴍ ᴘʀᴏᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2potion_effects + rgb"
+    potion_effects:
+      - "instant_health;1;1"
+    rgb: "255,0,0"
+
+  # Armor trim
+  trimmed:
+    material: DIAMOND_CHESTPLATE
+    slot: 16
+    name: "&b&lTrimmed Armor"
+    lore:
+      - "<dark_gray>ɪᴛᴇᴍ ᴘʀᴏᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2trim_material: gold"
+      - "&#B6D0E2trim_pattern: sentry"
+    trim_material: gold
+    trim_pattern: sentry
+    item_flags:
+      - HIDE_ATTRIBUTES
+
+  # Banner with patterns
+  banner:
+    material: RED_BANNER
+    slot: 19
+    name: "&4&lGuild Banner"
+    lore:
+      - "<dark_gray>ɪᴛᴇᴍ ᴘʀᴏᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2banner_meta patterns"
+    banner_meta:
+      - "WHITE;cross"
+      - "BLACK;border"
+
+  # Player head
+  player_head:
+    material: "head-Notch"
+    slot: 20
+    name: "&e&lPlayer Head"
+    lore:
+      - "<dark_gray>ʜᴇᴀᴅs</dark_gray>"
+      - ""
+      - "&#B6D0E2head-Notch"
+      - "&#B6D0E2Loads async, may show Steve first"
+
+  # Base64 head
+  base64_head:
+    material: "basehead-eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjFkZDRmZjQxOWE5MTQ3MmJmOWI2MjAzMjEzOTMzMmViYTM5OWU1NjI4YjUzNGU5NWNmYWIzOWE1MTcifX19"
+    slot: 21
+    name: "&b&lBase64 Head"
+    lore:
+      - "<dark_gray>ʜᴇᴀᴅs</dark_gray>"
+      - ""
+      - '&#B6D0E2basehead-(base64 string)'
+
+  # Equipment material (shows your held item)
+  main_hand_item:
+    material: main_hand
+    slot: 22
+    name: "&f&lYour Main Hand"
+    lore:
+      - "<dark_gray>ᴇǫᴜɪᴘᴍᴇɴᴛ</dark_gray>"
+      - ""
+      - "&#B6D0E2material: main_hand"
+      - "&#B6D0E2Shows what you're holding"
+
+  # Rarity
+  rare_item:
+    material: TRIDENT
+    slot: 24
+    name: "&5&lEpic Trident"
+    lore:
+      - "<dark_gray>ɪᴛᴇᴍ ᴘʀᴏᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2rarity: EPIC"
+    rarity: EPIC
+
+  # Updatable item with PAPI
+  updating_item:
+    material: CLOCK
+    slot: 31
+    name: "&6&lLive Stats"
+    lore:
+      - "<dark_gray>ᴜᴘᴅᴀᴛᴇ</dark_gray>"
+      - ""
+      - "&#B6D0E2Level: &f%player_level%"
+      - "&#B6D0E2Health: &c%player_health%"
+      - "&#B6D0E2World: &f%player_world%"
+      - ""
+      - "&7Updates every 20 ticks"
+    update: true
+
+  water_bottle:
+    material: water_bottle
+    slot: 28
+    name: "&b&lWater Bottle"
+    lore:
+      - "<dark_gray>ᴍᴀᴛᴇʀɪᴀʟs</dark_gray>"
+      - ""
+      - "&#B6D0E2material: water_bottle"
+
+  damaged_item:
+    material: DIAMOND_PICKAXE
+    slot: 29
+    name: "&7&lDamaged Pick"
+    lore:
+      - "<dark_gray>ɪᴛᴇᴍ ᴘʀᴏᴘs</dark_gray>"
+      - ""
+      - "&#B6D0E2damage: 500"
+    damage: 500
+
+  off_hand:
+    material: off_hand
+    slot: 23
+    name: "&f&lYour Off Hand"
+    lore:
+      - "<dark_gray>ᴇǫᴜɪᴘᴍᴇɴᴛ</dark_gray>"
+      - ""
+      - "&#B6D0E2material: off_hand"

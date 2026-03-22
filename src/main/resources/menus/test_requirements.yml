@@ -1,0 +1,231 @@
+# Tests: all requirement types, shorthand + full form, inverted, comparators
+
+title: "<dark_gray>ᴛᴇsᴛ ʀᴇǫᴜɪʀᴇᴍᴇɴᴛs</dark_gray>"
+command: testreq
+size: 54
+
+items:
+  border:
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "
+    hide_tooltip: true
+    slots: [0-9, 17-18, 26-27, 35-44, 45-53]
+
+  # Shorthand permission
+  perm_test:
+    material: IRON_DOOR
+    slot: 10
+    name: "&6&lPermission Check"
+    lore:
+      - "<dark_gray>sʜᴏʀᴛʜᴀɴᴅ</dark_gray>"
+      - ""
+      - "&#B6D0E2Requires: &faumenus.test"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - msg: "&#00FF7FPermission check passed!"
+    click_require:
+      perm: aumenus.test
+      deny: "&#FF474DYou don't have &faumenus.test"
+
+  # Shorthand money
+  money_test:
+    material: GOLD_INGOT
+    slot: 11
+    name: "&6&lMoney Check"
+    lore:
+      - "<dark_gray>sʜᴏʀᴛʜᴀɴᴅ</dark_gray>"
+      - ""
+      - "&#B6D0E2Requires: &a$500"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - msg: "&#00FF7FMoney check passed! You have enough."
+    click_require:
+      money: 500
+      deny: "&#FF474DYou need &a$500&#FF474D! Missing: &a${remaining}"
+
+  # Shorthand exp
+  exp_test:
+    material: EXPERIENCE_BOTTLE
+    slot: 12
+    name: "&6&lExp Check"
+    lore:
+      - "<dark_gray>sʜᴏʀᴛʜᴀɴᴅ</dark_gray>"
+      - ""
+      - "&#B6D0E2Requires: &f10 levels"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - msg: "&#00FF7FExp check passed!"
+    click_require:
+      exp: 10
+      level: true
+      deny: "&#FF474DYou need &f10 levels&#FF474D! You have: &f{has}"
+
+  # Shorthand item
+  item_test:
+    material: DIAMOND
+    slot: 13
+    name: "&6&lItem Check"
+    lore:
+      - "<dark_gray>sʜᴏʀᴛʜᴀɴᴅ</dark_gray>"
+      - ""
+      - "&#B6D0E2Requires: &f1 Diamond"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - msg: "&#00FF7FYou have a diamond!"
+    click_require:
+      item: "DIAMOND 1"
+      deny: "&#FF474DYou need a Diamond in your inventory!"
+
+  # Comparator >=
+  compare_gte:
+    material: COMPARATOR
+    slot: 14
+    name: "&6&lComparator >="
+    lore:
+      - "<dark_gray>ᴄᴏᴍᴘᴀʀᴀᴛᴏʀ</dark_gray>"
+      - ""
+      - "&#B6D0E2Level >= 5"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - msg: "&#00FF7FYour level is >= 5!"
+    click_require:
+      type: ">="
+      input: "%player_level%"
+      output: "5"
+      deny: "&#FF474DYour level is below 5!"
+
+  # Comparator ==
+  compare_eq:
+    material: REPEATER
+    slot: 15
+    name: "&6&lComparator =="
+    lore:
+      - "<dark_gray>ᴄᴏᴍᴘᴀʀᴀᴛᴏʀ</dark_gray>"
+      - ""
+      - "&#B6D0E2Checks if you're in &fworld"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - msg: "&#00FF7FYou are in the overworld!"
+    click_require:
+      type: string_equals
+      input: "%player_world%"
+      output: "world"
+      deny: "&#FF474DYou must be in the overworld!"
+
+  # Inverted requirement
+  inverted_test:
+    material: REDSTONE
+    slot: 16
+    name: "&6&lInverted Check"
+    lore:
+      - "<dark_gray>ɪɴᴠᴇʀᴛᴇᴅ</dark_gray>"
+      - ""
+      - "&#B6D0E2Passes if NOT in nether"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - msg: "&#00FF7FYou're not in the nether!"
+    click_require:
+      type: "!string_equals"
+      input: "%player_world%"
+      output: "world_nether"
+      deny: "&#FF474DYou can't use this in the Nether!"
+
+  # Full form with multiple checks
+  full_form:
+    material: ENCHANTING_TABLE
+    slot: 22
+    name: "&6&lFull Form (Multi-Check)"
+    lore:
+      - "<dark_gray>ғᴜʟʟ ғᴏʀᴍ</dark_gray>"
+      - ""
+      - "&#B6D0E2Requires:"
+      - "&#FFFF8F» &f5 levels"
+      - "&#FFFF8F» &a$100"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - msg: "&#00FF7FAll checks passed!"
+    click_require:
+      checks:
+        levels:
+          type: has_exp
+          amount: 5
+          level: true
+          deny:
+            - msg: "&#FF474DYou need &f5 levels&#FF474D!"
+        money:
+          type: has_money
+          amount: 100
+          deny:
+            - msg: "&#FF474DYou need &a$100&#FF474D!"
+      deny:
+        - msg: "&#FF474DYou don't meet all requirements."
+
+  # String length check
+  length_test:
+    material: NAME_TAG
+    slot: 19
+    name: "&6&lString Length"
+    lore:
+      - "<dark_gray>sᴛʀɪɴɢ</dark_gray>"
+      - ""
+      - "&#B6D0E2Name 3-16 chars?"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - msg: "&#00FF7FYour name length is valid!"
+    click_require:
+      type: string_length
+      input: "%player_name%"
+      min: 3
+      max: 16
+      deny: "&#FF474DYour name is not 3-16 characters!"
+
+  # Regex match
+  regex_test:
+    material: PAPER
+    slot: 20
+    name: "&6&lRegex Match"
+    lore:
+      - "<dark_gray>ʀᴇɢᴇx</dark_gray>"
+      - ""
+      - "&#B6D0E2Name starts with a-z?"
+      - ""
+      - "&e&l➜ &fClick to Test"
+    on_click:
+      - msg: "&#00FF7FYour name matches the pattern!"
+    click_require:
+      type: regex_matches
+      input: "%player_name%"
+      regex: "^[a-zA-Z].*"
+      deny: "&#FF474DYour name doesn't match the regex!"
+
+  # View requirement - conditional items
+  vip_item:
+    material: NETHER_STAR
+    slot: 31
+    name: "&6&l* VIP Item *"
+    lore:
+      - "<dark_gray>ᴄᴏɴᴅɪᴛɪᴏɴᴀʟ</dark_gray>"
+      - ""
+      - "&#00FF7FYou are a VIP!"
+    priority: 0
+    view_require:
+      perm: group.vip
+
+  non_vip_item:
+    material: COAL
+    slot: 31
+    name: "&7&lRegular Item"
+    lore:
+      - "<dark_gray>ᴄᴏɴᴅɪᴛɪᴏɴᴀʟ</dark_gray>"
+      - ""
+      - "&#FF474DYou are not a VIP."
+    priority: 1

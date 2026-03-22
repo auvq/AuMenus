@@ -1,0 +1,31 @@
+title: "<dark_gray>ᴅɪsᴘᴇɴsᴇʀ ᴍᴇɴᴜ</dark_gray>"
+command: testdisp
+type: DISPENSER
+size: 9
+items:
+  info:
+    material: PAPER
+    slot: 0
+    name: "&6&lDispenser Menu"
+    lore:
+      - "<dark_gray>ɪɴᴠᴇɴᴛᴏʀʏ ᴛʏᴘᴇ</dark_gray>"
+      - ""
+      - "&#B6D0E2Type: &fDISPENSER"
+      - "&#B6D0E2Slots: &f9 (3x3)"
+
+  test:
+    material: EMERALD
+    slot: 4
+    name: "&a&lDispenser Menu Item"
+    lore:
+      - "&#B6D0E2This is a DISPENSER inventory type"
+      - "&e&l➜ &fClick to open hopper menu"
+    on_click:
+      - open: test_inventory_types
+
+  close:
+    material: BARRIER
+    slot: 8
+    name: "&c&lClose"
+    on_click:
+      - close

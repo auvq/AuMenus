@@ -1,0 +1,72 @@
+# AuMenus - Basic Menu Example
+
+title: "<dark_gray>ᴅɪᴀᴍᴏɴᴅ sʜᴏᴘ</dark_gray>"
+command: shop
+register_command: true
+size: 27
+update_interval: 20
+
+open_require:
+  perm: shop.access
+  deny: "&#FF474DYou do not have permission to open this shop."
+
+on_open:
+  - sound: block.chest.open
+
+on_close:
+  - sound: block.chest.close
+
+items:
+  glass_border:
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "
+    hide_tooltip: true
+    slots: [0-8, 18-26]
+
+  diamond:
+    material: DIAMOND
+    slot: 12
+    name: "<bold><gradient:#FC5C5C:#FCD05C>Diamond</gradient></bold>"
+    lore:
+      - "<dark_gray>ᴅɪᴀᴍᴏɴᴅ sʜᴏᴘ</dark_gray>"
+      - ""
+      - "&#B6D0E2Price: &a$100"
+      - "&#B6D0E2Balance: &a$%vault_eco_balance_formatted%"
+      - ""
+      - "&e&l➜ &fClick to Purchase"
+    update: true
+    on_click:
+      - take_money: 100
+      - console: "give %player% diamond 1"
+      - msg: "&#B6D0E2Purchased &#00FF7FDiamond &ffor &a$100&#B6D0E2!"
+      - sound: entity.experience_orb.pickup
+      - refresh
+    click_require:
+      money: 100
+      deny: "&#FF474DYou need &a$100&#FF474D! Missing: &a${remaining}"
+
+  emerald:
+    material: EMERALD
+    slot: 14
+    name: "<bold><gradient:#5CFC7C:#5CFCD0>Emerald</gradient></bold>"
+    lore:
+      - "<dark_gray>ᴅɪᴀᴍᴏɴᴅ sʜᴏᴘ</dark_gray>"
+      - ""
+      - "&#B6D0E2Price: &a$250"
+      - ""
+      - "&e&l➜ &fClick to Purchase"
+    on_click:
+      - take_money: 250
+      - console: "give %player% emerald 1"
+      - msg: "&#B6D0E2Purchased &#00FF7FEmerald &ffor &a$250&#B6D0E2!"
+      - sound: entity.experience_orb.pickup
+    click_require:
+      money: 250
+      deny: "&#FF474DYou need &a$250&#FF474D! Missing: &a${remaining}"
+
+  close_button:
+    material: FLOWER_BANNER_PATTERN
+    slot: 22
+    name: "&eExit Menu ↓"
+    on_click:
+      - close
