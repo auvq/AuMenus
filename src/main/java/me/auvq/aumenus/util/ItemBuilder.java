@@ -1,10 +1,13 @@
 package me.auvq.aumenus.util;
 
 import me.auvq.aumenus.AuMenus;
+import me.auvq.aumenus.hook.HeadDatabaseHook;
+import me.auvq.aumenus.hook.ItemsAdderHook;
+import me.auvq.aumenus.hook.NexoHook;
+import me.auvq.aumenus.hook.OraxenHook;
 import me.auvq.aumenus.item.HeadProvider;
 import me.auvq.aumenus.item.MenuItem;
 import me.auvq.aumenus.menu.MenuHolder;
-import me.auvq.aumenus.util.Util;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
@@ -30,12 +33,15 @@ import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.banner.PatternType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.potion.PotionType;
+import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
 public final class ItemBuilder {
 
@@ -72,7 +78,7 @@ public final class ItemBuilder {
 
         try {
             return buildItemInternal(player, item, holder);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             plugin.getLogger().warning("Failed to build item '" + item.getName() + "': " + e.getMessage());
             return Util.buildErrorItem(item.getName(), e.getMessage());
         }
@@ -160,28 +166,76 @@ public final class ItemBuilder {
         meta.lore(newLore);
     }
 
+    private static final Map<String, String> LEGACY_ENCHANT_NAMES = Map.ofEntries(
+            Map.entry("protection_environmental", "protection"),
+            Map.entry("protection_fire", "fire_protection"),
+            Map.entry("protection_fall", "feather_falling"),
+            Map.entry("protection_explosions", "blast_protection"),
+            Map.entry("protection_projectile", "projectile_protection"),
+            Map.entry("oxygen", "respiration"),
+            Map.entry("water_worker", "aqua_affinity"),
+            Map.entry("thorns", "thorns"),
+            Map.entry("depth_strider", "depth_strider"),
+            Map.entry("frost_walker", "frost_walker"),
+            Map.entry("damage_all", "sharpness"),
+            Map.entry("damage_undead", "smite"),
+            Map.entry("damage_arthropods", "bane_of_arthropods"),
+            Map.entry("knockback", "knockback"),
+            Map.entry("fire_aspect", "fire_aspect"),
+            Map.entry("loot_bonus_mobs", "looting"),
+            Map.entry("sweeping_edge", "sweeping_edge"),
+            Map.entry("dig_speed", "efficiency"),
+            Map.entry("silk_touch", "silk_touch"),
+            Map.entry("durability", "unbreaking"),
+            Map.entry("loot_bonus_blocks", "fortune"),
+            Map.entry("arrow_damage", "power"),
+            Map.entry("arrow_knockback", "punch"),
+            Map.entry("arrow_fire", "flame"),
+            Map.entry("arrow_infinite", "infinity"),
+            Map.entry("luck", "luck_of_the_sea"),
+            Map.entry("lure", "lure"),
+            Map.entry("mending", "mending"),
+            Map.entry("binding_curse", "binding_curse"),
+            Map.entry("vanishing_curse", "vanishing_curse"),
+            Map.entry("loyalty", "loyalty"),
+            Map.entry("impaling", "impaling"),
+            Map.entry("riptide", "riptide"),
+            Map.entry("channeling", "channeling"),
+            Map.entry("multishot", "multishot"),
+            Map.entry("quick_charge", "quick_charge"),
+            Map.entry("piercing", "piercing"),
+            Map.entry("soul_speed", "soul_speed"),
+            Map.entry("swift_sneak", "swift_sneak")
+    );
+
     private void applyEnchantments(@NotNull ItemMeta meta, @NotNull MenuItem item) {
         if (item.getEnchantments() == null) {
             return;
         }
         for (String enchStr : item.getEnchantments()) {
-            String[] parts = enchStr.split(";");
-            if (parts.length < 2) {
-                plugin.getLogger().warning("Invalid enchantment format: " + enchStr);
-                continue;
-            }
-            Enchantment enchant = RegistryAccess.registryAccess()
-                    .getRegistry(RegistryKey.ENCHANTMENT)
-                    .get(NamespacedKey.minecraft(parts[0].toLowerCase()));
-            if (enchant == null) {
-                plugin.getLogger().warning("Invalid enchantment format: " + enchStr);
-                continue;
-            }
-            try {
-                meta.addEnchant(enchant, Integer.parseInt(parts[1]), true);
-            } catch (NumberFormatException e) {
-                plugin.getLogger().warning("Invalid enchantment format: " + enchStr);
-            }
+            applyEnchantment(meta, enchStr);
+        }
+    }
+
+    private void applyEnchantment(@NotNull ItemMeta meta, @NotNull String enchStr) {
+        String[] parts = enchStr.split(";");
+        if (parts.length < 2) {
+            plugin.getLogger().warning("Invalid enchantment format: " + enchStr);
+            return;
+        }
+        String enchantName = parts[0].toLowerCase();
+        String modernName = LEGACY_ENCHANT_NAMES.getOrDefault(enchantName, enchantName);
+        Enchantment enchant = RegistryAccess.registryAccess()
+                .getRegistry(RegistryKey.ENCHANTMENT)
+                .get(NamespacedKey.minecraft(modernName));
+        if (enchant == null) {
+            plugin.getLogger().warning("Unknown enchantment: " + parts[0]);
+            return;
+        }
+        try {
+            meta.addEnchant(enchant, Integer.parseInt(parts[1]), true);
+        } catch (NumberFormatException e) {
+            plugin.getLogger().warning("Invalid enchantment level: " + enchStr);
         }
     }
 
@@ -221,13 +275,13 @@ public final class ItemBuilder {
         if (item.getItemModel() != null && SET_ITEM_MODEL != null) {
             try {
                 SET_ITEM_MODEL.invoke(meta, NamespacedKey.fromString(item.getItemModel()));
-            } catch (Exception ignored) {
+            } catch (ReflectiveOperationException ignored) {
             }
         }
         if (item.getTooltipStyle() != null && SET_TOOLTIP_STYLE != null) {
             try {
                 SET_TOOLTIP_STYLE.invoke(meta, NamespacedKey.fromString(item.getTooltipStyle()));
-            } catch (Exception ignored) {
+            } catch (ReflectiveOperationException ignored) {
             }
         }
         if (item.getDamage() != null && meta instanceof Damageable damageable) {
@@ -272,22 +326,26 @@ public final class ItemBuilder {
             }
         }
         for (String patternStr : item.getBannerMeta()) {
-            String[] parts = patternStr.split(";");
-            if (parts.length < 2) {
-                plugin.getLogger().warning("Invalid banner pattern format: " + patternStr);
-                continue;
+            parseBannerPattern(bannerMeta, patternStr);
+        }
+    }
+
+    private void parseBannerPattern(@NotNull BannerMeta bannerMeta, @NotNull String patternStr) {
+        String[] parts = patternStr.split(";");
+        if (parts.length < 2) {
+            plugin.getLogger().warning("Invalid banner pattern format: " + patternStr);
+            return;
+        }
+        try {
+            DyeColor dyeColor = DyeColor.valueOf(parts[0].toUpperCase());
+            PatternType patternType = RegistryAccess.registryAccess()
+                    .getRegistry(RegistryKey.BANNER_PATTERN)
+                    .get(NamespacedKey.minecraft(parts[1].toLowerCase()));
+            if (patternType != null) {
+                bannerMeta.addPattern(new Pattern(dyeColor, patternType));
             }
-            try {
-                DyeColor dyeColor = DyeColor.valueOf(parts[0].toUpperCase());
-                PatternType patternType = RegistryAccess.registryAccess()
-                        .getRegistry(RegistryKey.BANNER_PATTERN)
-                        .get(NamespacedKey.minecraft(parts[1].toLowerCase()));
-                if (patternType != null) {
-                    bannerMeta.addPattern(new Pattern(dyeColor, patternType));
-                }
-            } catch (IllegalArgumentException e) {
-                plugin.getLogger().warning("Invalid banner pattern format: " + patternStr);
-            }
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Invalid banner pattern format: " + patternStr);
         }
     }
 
@@ -296,25 +354,29 @@ public final class ItemBuilder {
             return;
         }
         for (String effectStr : item.getPotionEffects()) {
-            String[] parts = effectStr.split(";");
-            if (parts.length < 3) {
-                plugin.getLogger().warning("Invalid potion effect format: " + effectStr);
-                continue;
-            }
-            PotionEffectType effectType = RegistryAccess.registryAccess()
-                    .getRegistry(RegistryKey.MOB_EFFECT)
-                    .get(NamespacedKey.minecraft(parts[0].toLowerCase()));
-            if (effectType == null) {
-                plugin.getLogger().warning("Invalid potion effect format: " + effectStr);
-                continue;
-            }
-            try {
-                int duration = Integer.parseInt(parts[1]);
-                int amplifier = Integer.parseInt(parts[2]);
-                potionMeta.addCustomEffect(new PotionEffect(effectType, duration, amplifier), true);
-            } catch (NumberFormatException e) {
-                plugin.getLogger().warning("Invalid potion effect format: " + effectStr);
-            }
+            applyPotionEffect(potionMeta, effectStr);
+        }
+    }
+
+    private void applyPotionEffect(@NotNull PotionMeta potionMeta, @NotNull String effectStr) {
+        String[] parts = effectStr.split(";");
+        if (parts.length < 3) {
+            plugin.getLogger().warning("Invalid potion effect format: " + effectStr);
+            return;
+        }
+        PotionEffectType effectType = RegistryAccess.registryAccess()
+                .getRegistry(RegistryKey.MOB_EFFECT)
+                .get(NamespacedKey.minecraft(parts[0].toLowerCase()));
+        if (effectType == null) {
+            plugin.getLogger().warning("Invalid potion effect format: " + effectStr);
+            return;
+        }
+        try {
+            int duration = Integer.parseInt(parts[1]);
+            int amplifier = Integer.parseInt(parts[2]);
+            potionMeta.addCustomEffect(new PotionEffect(effectType, duration, amplifier), true);
+        } catch (NumberFormatException e) {
+            plugin.getLogger().warning("Invalid potion effect format: " + effectStr);
         }
     }
 
@@ -364,7 +426,7 @@ public final class ItemBuilder {
             ItemStack potion = new ItemStack(Material.POTION);
             PotionMeta potionMeta = (PotionMeta) potion.getItemMeta();
             if (potionMeta != null) {
-                potionMeta.setBasePotionType(org.bukkit.potion.PotionType.WATER);
+                potionMeta.setBasePotionType(PotionType.WATER);
                 potion.setItemMeta(potionMeta);
             }
             return potion;
@@ -375,8 +437,22 @@ public final class ItemBuilder {
             if (plugin.getHookProvider().isPapiEnabled() && resolved.contains("%")) {
                 resolved = plugin.getHookProvider().papi().setPlaceholders(player, resolved);
             }
-            Material mat = Material.matchMaterial(resolved);
-            return new ItemStack(Objects.requireNonNullElse(mat, Material.STONE));
+            if (resolved.startsWith("placeholder-")) {
+                return new ItemStack(Material.STONE);
+            }
+            return resolveMaterial(resolved, player);
+        }
+        if (materialStr.startsWith("hdb-")) {
+            return resolveHeadDatabase(materialStr.substring(4));
+        }
+        if (materialStr.startsWith("itemsadder-")) {
+            return resolveItemsAdder(materialStr.substring(11));
+        }
+        if (materialStr.startsWith("oraxen-")) {
+            return resolveOraxen(materialStr.substring(7));
+        }
+        if (materialStr.startsWith("nexo-")) {
+            return resolveNexo(materialStr.substring(5));
         }
 
         Material material = Material.matchMaterial(materialStr);
@@ -400,4 +476,46 @@ public final class ItemBuilder {
     private @NotNull String resolve(@NotNull Player player, @NotNull String text, @NotNull MenuHolder holder) {
         return Util.resolvePlaceholders(player, text, holder, plugin.getHookProvider());
     }
+
+    @FunctionalInterface
+    private interface ThirdPartyResolver {
+        @Nullable ItemStack resolve(@NotNull String id);
+    }
+
+    private @NotNull ItemStack resolveThirdPartyItem(@NotNull String pluginName,
+                                                      @NotNull String id,
+                                                      @NotNull ThirdPartyResolver resolver) {
+        if (Bukkit.getPluginManager().getPlugin(pluginName) == null) {
+            plugin.getLogger().warning("Material uses " + pluginName + " but it is not installed: " + id);
+            return new ItemStack(Material.STONE);
+        }
+        try {
+            ItemStack result = resolver.resolve(id);
+            if (result == null) {
+                plugin.getLogger().warning(pluginName + " item '" + id + "' not found.");
+                return new ItemStack(Material.STONE);
+            }
+            return result;
+        } catch (RuntimeException e) {
+            plugin.getLogger().warning("Failed to get " + pluginName + " item '" + id + "': " + e.getMessage());
+            return new ItemStack(Material.STONE);
+        }
+    }
+
+    private @NotNull ItemStack resolveHeadDatabase(@NotNull String id) {
+        return resolveThirdPartyItem("HeadDatabase", id, HeadDatabaseHook::getItem);
+    }
+
+    private @NotNull ItemStack resolveItemsAdder(@NotNull String id) {
+        return resolveThirdPartyItem("ItemsAdder", id, ItemsAdderHook::getItem);
+    }
+
+    private @NotNull ItemStack resolveOraxen(@NotNull String id) {
+        return resolveThirdPartyItem("Oraxen", id, OraxenHook::getItem);
+    }
+
+    private @NotNull ItemStack resolveNexo(@NotNull String id) {
+        return resolveThirdPartyItem("Nexo", id, NexoHook::getItem);
+    }
+
 }

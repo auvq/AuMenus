@@ -4,6 +4,7 @@ import me.auvq.aumenus.AuMenus;
 import me.auvq.aumenus.action.Action;
 import me.auvq.aumenus.requirement.RequirementList;
 import me.auvq.aumenus.util.Util;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -143,10 +144,12 @@ public final class AnvilInput {
     }
 
     private @NotNull List<Action> resolveInputActions(@NotNull List<Action> actions, @NotNull String inputText) {
+        String sanitized = MiniMessage.miniMessage()
+                .escapeTags(inputText).replace("\n", "").replace("\r", "");
         return actions.stream()
                 .map(action -> new Action(
                         action.getType(),
-                        action.getValue().replace("{input}", inputText),
+                        action.getValue().replace("{input}", sanitized),
                         action.getDelay(),
                         action.getChance()))
                 .toList();
@@ -155,17 +158,26 @@ public final class AnvilInput {
     @SuppressWarnings("unchecked")
     private @NotNull Map<String, Object> resolveInputInConfig(@NotNull Map<String, Object> config,
                                                                @NotNull String inputText) {
+        String sanitized = MiniMessage.miniMessage()
+                .escapeTags(inputText).replace("\n", "").replace("\r", "");
+
         Map<String, Object> resolved = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : config.entrySet()) {
-            Object value = entry.getValue();
-            if (value instanceof String str) {
-                resolved.put(entry.getKey(), str.replace("{input}", inputText));
-            } else if (value instanceof Map<?, ?> nested) {
-                resolved.put(entry.getKey(), resolveInputInConfig((Map<String, Object>) nested, inputText));
-            } else {
-                resolved.put(entry.getKey(), value);
-            }
+            resolved.put(entry.getKey(), resolveConfigValue(entry.getValue(), sanitized, inputText));
         }
         return resolved;
+    }
+
+    @SuppressWarnings("unchecked")
+    private @NotNull Object resolveConfigValue(@NotNull Object value,
+                                                @NotNull String sanitized,
+                                                @NotNull String inputText) {
+        if (value instanceof String str) {
+            return str.replace("{input}", sanitized);
+        }
+        if (value instanceof Map<?, ?> nested) {
+            return resolveInputInConfig((Map<String, Object>) nested, inputText);
+        }
+        return value;
     }
 }

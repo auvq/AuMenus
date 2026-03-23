@@ -5,6 +5,7 @@ import me.auvq.aumenus.config.MenuLoader;
 import me.auvq.aumenus.menu.Menu;
 import me.auvq.aumenus.menu.MenuHolder;
 import me.auvq.aumenus.util.Util;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -26,7 +27,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,18 +55,7 @@ public final class MenuEditor {
         }
 
         File menuFile = new File(plugin.getDataFolder(), "menus/" + menuName + ".yml");
-
-        InventoryType invType = InventoryType.CHEST;
-        if (menuFile.exists()) {
-            YamlConfiguration tempConfig = YamlConfiguration.loadConfiguration(menuFile);
-            String typeStr = tempConfig.getString("type");
-            if (typeStr != null) {
-                try {
-                    invType = InventoryType.valueOf(typeStr.toUpperCase());
-                } catch (IllegalArgumentException ignored) {
-                }
-            }
-        }
+        InventoryType invType = loadInventoryType(menuFile);
 
         Inventory editor;
         if (invType == InventoryType.CHEST) {
@@ -76,13 +65,36 @@ public final class MenuEditor {
         }
 
         if (menuFile.exists()) {
-            loadItemsIntoEditor(editor, menuFile);
+            loadItemsIntoEditor(editor, menuFile, player);
         }
 
         EDITING.add(player.getUniqueId());
         Listener listener = createEditorListener(player, editor, menuName, menuFile);
         Bukkit.getPluginManager().registerEvents(listener, plugin);
-        player.getScheduler().run(plugin, task -> player.openInventory(editor), null);
+        player.getScheduler().run(plugin, task -> {
+            plugin.getMenuRegistry().getOpenMenu(player.getUniqueId())
+                    .ifPresent(h -> h.setReloading(true));
+            player.openInventory(editor);
+        }, null);
+    }
+
+    private @NotNull InventoryType loadInventoryType(@NotNull File menuFile) {
+        if (!menuFile.exists()) {
+            return InventoryType.CHEST;
+        }
+
+        YamlConfiguration tempConfig = YamlConfiguration.loadConfiguration(menuFile);
+        String typeStr = tempConfig.getString("type");
+        if (typeStr == null) {
+            return InventoryType.CHEST;
+        }
+
+        try {
+            return InventoryType.valueOf(typeStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Unknown inventory type: " + typeStr);
+            return InventoryType.CHEST;
+        }
     }
 
     private Listener createEditorListener(@NotNull Player player,
@@ -199,27 +211,25 @@ public final class MenuEditor {
 
         if (meta.hasDisplayName()) {
             config.set(path + ".name",
-                    net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
-                            .plainText().serialize(meta.displayName()));
+                    PlainTextComponentSerializer.plainText().serialize(meta.displayName()));
         }
 
         if (meta.hasLore() && meta.lore() != null) {
             List<String> lore = meta.lore().stream()
-                    .map(c -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
-                            .plainText().serialize(c))
+                    .map(c -> PlainTextComponentSerializer.plainText().serialize(c))
                     .toList();
             config.set(path + ".lore", lore);
         }
     }
 
-    private void loadItemsIntoEditor(@NotNull Inventory editor, @NotNull File menuFile) {
+    private void loadItemsIntoEditor(@NotNull Inventory editor, @NotNull File menuFile,
+                                      @NotNull Player player) {
         Menu menu = plugin.getMenuLoader().loadMenu(menuFile);
         if (menu == null) {
             return;
         }
 
-        MenuHolder tempHolder = new MenuHolder(menu, Bukkit.getOnlinePlayers().iterator().next(),
-                Map.of());
+        MenuHolder tempHolder = new MenuHolder(menu, player, Map.of());
         plugin.getMenuRenderer().render(tempHolder);
 
         YamlConfiguration config = YamlConfiguration.loadConfiguration(menuFile);
@@ -229,23 +239,35 @@ public final class MenuEditor {
         }
 
         for (String itemName : itemsSection.getKeys(false)) {
-            ConfigurationSection section = itemsSection.getConfigurationSection(itemName);
-            if (section == null) {
-                continue;
-            }
-
-            List<Integer> slots = parseItemSlots(section, editor.getSize());
-            for (int slot : slots) {
-                ItemStack rendered = tempHolder.getInventory().getItem(slot);
-                if (rendered == null || rendered.getType() == Material.AIR) {
-                    continue;
-                }
-
-                ItemStack tagged = rendered.clone();
-                tagEditorItem(tagged, itemName);
-                editor.setItem(slot, tagged);
-            }
+            loadSingleEditorItem(itemsSection, itemName, tempHolder, editor);
         }
+    }
+
+    private void loadSingleEditorItem(@NotNull ConfigurationSection itemsSection,
+                                       @NotNull String itemName,
+                                       @NotNull MenuHolder tempHolder,
+                                       @NotNull Inventory editor) {
+        ConfigurationSection section = itemsSection.getConfigurationSection(itemName);
+        if (section == null) {
+            return;
+        }
+
+        List<Integer> slots = parseItemSlots(section, editor.getSize());
+        for (int slot : slots) {
+            placeRenderedItem(tempHolder, editor, slot, itemName);
+        }
+    }
+
+    private void placeRenderedItem(@NotNull MenuHolder tempHolder, @NotNull Inventory editor,
+                                    int slot, @NotNull String itemName) {
+        ItemStack rendered = tempHolder.getInventory().getItem(slot);
+        if (rendered == null || rendered.getType() == Material.AIR) {
+            return;
+        }
+
+        ItemStack tagged = rendered.clone();
+        tagEditorItem(tagged, itemName);
+        editor.setItem(slot, tagged);
     }
 
     private void tagEditorItem(@NotNull ItemStack item, @NotNull String itemName) {

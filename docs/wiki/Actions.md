@@ -45,7 +45,7 @@ on_click:
 | `jsonbroadcast` | | Broadcast raw JSON text component |
 | `open` | `openguimenu`, `openmenu` | Open another menu. Pass args separated by spaces. |
 | `close` | | Close current menu |
-| `refresh` | | Re-render current menu without closing |
+| `refresh` | | Re-render current menu without closing. Use with a delay when placed after commands (see below). |
 | `take_money` | `takemoney` | Withdraw from player balance (Vault) |
 | `give_money` | `givemoney` | Deposit to player balance (Vault) |
 | `give_exp` | `giveexp` | Give exp points, or levels with `L` suffix |
@@ -62,6 +62,27 @@ on_click:
 | `next_page` | | Go to next page in paginated menu |
 | `anvil_input` | | Open anvil GUI for text input |
 | `chat_input` | | Close menu and wait for chat message |
+
+## Refresh After Commands
+
+When using `refresh` after a `player` or `console` action, the command may not have finished processing by the time the menu re-renders. Add a delay to give the command time to complete:
+
+```yaml
+on_click:
+  - player: sethome myhome
+  - sound: entity.experience_orb.pickup
+  - refresh                        # too fast — placeholders show old values
+```
+
+```yaml
+on_click:
+  - player: sethome myhome
+  - sound: entity.experience_orb.pickup
+  - refresh: ''
+    delay: 5                       # waits 5 ticks before refreshing
+```
+
+A delay of 5-10 ticks is usually enough. Increase if the command triggers async operations.
 
 ## Sound Format
 

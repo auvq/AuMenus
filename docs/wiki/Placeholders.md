@@ -62,15 +62,15 @@ lore:
 
 AuMenus also registers the `aumenus` expansion:
 
-| Placeholder                                | Description |
-|--------------------------------------------|-------------|
-| `%aumenus_is_in_menu%`                     | `true` if player has a menu open |
-| `%aumenus_opened_menu%`                    | Name of open menu, or empty |
-| `%aumenus_last_menu%`                      | Name of last opened menu |
-| `%aumenus_meta_<key>_<TYPE>%`              | Meta value (empty if not set) |
-| `%aumenus_meta_<key>_<TYPE>_<default>%`    | Meta value with fallback |
-| `%aumenus_meta_has_value_<key>%`           | `true`/`false` if key exists |
-| `%aumenus_meta_has_value_<key>_<TYPE>%`    | `true`/`false` if key exists as type |
+| Placeholder                   | Description |
+|-------------------------------|-------------|
+| `%aumenus_is_in_menu%`        | `true` if player has a menu open |
+| `%aumenus_opened_menu%`       | Name of open menu, or empty |
+| `%aumenus_last_menu%`         | Name of last opened menu |
+| `%aumenus_meta_<key>_<TYPE>%` | Meta value (empty if not set) |
+| `%aumenus_meta_<key>_<TYPE>_<default>%` | Meta value with fallback |
+| `%aumenus_meta_has_value_<key>%` | `true`/`false` if key exists |
+| `%aumenus_meta_has_value_<key>_<TYPE>%` | `true`/`false` if key exists as type |
 
 ---
 

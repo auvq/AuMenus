@@ -23,13 +23,23 @@ public final class MetaStore {
         PersistentDataContainer pdc = player.getPersistentDataContainer();
         NamespacedKey nsKey = new NamespacedKey(plugin, key);
 
-        switch (type.toUpperCase()) {
-            case "STRING" -> pdc.set(nsKey, PersistentDataType.STRING, value);
-            case "INTEGER", "INT" -> pdc.set(nsKey, PersistentDataType.INTEGER, Integer.parseInt(value));
-            case "LONG" -> pdc.set(nsKey, PersistentDataType.LONG, Long.parseLong(value));
-            case "DOUBLE" -> pdc.set(nsKey, PersistentDataType.DOUBLE, Double.parseDouble(value));
-            case "BOOLEAN" -> pdc.set(nsKey, PersistentDataType.STRING, String.valueOf(Boolean.parseBoolean(value)));
-            default -> plugin.getLogger().warning("Unknown meta type: " + type);
+        try {
+            switch (type.toUpperCase()) {
+                case "STRING" -> pdc.set(nsKey, PersistentDataType.STRING, value);
+                case "INTEGER", "INT" -> pdc.set(nsKey, PersistentDataType.INTEGER, Integer.parseInt(value));
+                case "LONG" -> pdc.set(nsKey, PersistentDataType.LONG, Long.parseLong(value));
+                case "DOUBLE" -> {
+                    double parsed = Double.parseDouble(value);
+                    if (Double.isNaN(parsed) || Double.isInfinite(parsed)) {
+                        return;
+                    }
+                    pdc.set(nsKey, PersistentDataType.DOUBLE, parsed);
+                }
+                case "BOOLEAN" -> pdc.set(nsKey, PersistentDataType.STRING, String.valueOf(Boolean.parseBoolean(value)));
+                default -> plugin.getLogger().warning("Unknown meta type: " + type);
+            }
+        } catch (NumberFormatException e) {
+            plugin.getLogger().warning("Invalid value for meta key '" + key + "' (type " + type + "): " + value);
         }
     }
 
@@ -42,6 +52,9 @@ public final class MetaStore {
         try {
             String current = get(player, key, type, "0");
             double result = Double.parseDouble(current) + Double.parseDouble(value);
+            if (Double.isNaN(result) || Double.isInfinite(result)) {
+                return;
+            }
             set(player, key, type, formatNumber(result, type));
         } catch (NumberFormatException e) {
             plugin.getLogger().warning("Invalid number in meta add for key '" + key + "': " + e.getMessage());
@@ -52,6 +65,9 @@ public final class MetaStore {
         try {
             String current = get(player, key, type, "0");
             double result = Double.parseDouble(current) - Double.parseDouble(value);
+            if (Double.isNaN(result) || Double.isInfinite(result)) {
+                return;
+            }
             set(player, key, type, formatNumber(result, type));
         } catch (NumberFormatException e) {
             plugin.getLogger().warning("Invalid number in meta subtract for key '" + key + "': " + e.getMessage());
@@ -98,35 +114,37 @@ public final class MetaStore {
     private @Nullable String autoDetectGet(@NotNull PersistentDataContainer pdc,
                                             @NotNull NamespacedKey key,
                                             @Nullable String defaultValue) {
-        try {
-            String val = pdc.get(key, PersistentDataType.STRING);
-            if (val != null) {
-                return val;
-            }
-        } catch (IllegalArgumentException ignored) {}
+        String strVal = tryGet(pdc, key, PersistentDataType.STRING);
+        if (strVal != null) {
+            return strVal;
+        }
 
-        try {
-            Integer val = pdc.get(key, PersistentDataType.INTEGER);
-            if (val != null) {
-                return String.valueOf(val);
-            }
-        } catch (IllegalArgumentException ignored) {}
+        Integer intVal = tryGet(pdc, key, PersistentDataType.INTEGER);
+        if (intVal != null) {
+            return String.valueOf(intVal);
+        }
 
-        try {
-            Double val = pdc.get(key, PersistentDataType.DOUBLE);
-            if (val != null) {
-                return String.valueOf(val);
-            }
-        } catch (IllegalArgumentException ignored) {}
+        Double dblVal = tryGet(pdc, key, PersistentDataType.DOUBLE);
+        if (dblVal != null) {
+            return String.valueOf(dblVal);
+        }
 
-        try {
-            Long val = pdc.get(key, PersistentDataType.LONG);
-            if (val != null) {
-                return String.valueOf(val);
-            }
-        } catch (IllegalArgumentException ignored) {}
+        Long longVal = tryGet(pdc, key, PersistentDataType.LONG);
+        if (longVal != null) {
+            return String.valueOf(longVal);
+        }
 
         return defaultValue;
+    }
+
+    private <T> @Nullable T tryGet(@NotNull PersistentDataContainer pdc,
+                                    @NotNull NamespacedKey key,
+                                    @NotNull PersistentDataType<T, T> type) {
+        try {
+            return pdc.get(key, type);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public @NotNull List<String> getKeys(@NotNull Player player) {

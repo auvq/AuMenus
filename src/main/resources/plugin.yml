@@ -6,4 +6,4 @@ folia-supported: true
 description: Lightweight GUI menu plugin for Paper/Folia
 authors: [auvq]
 website: https://github.com/auvq/AuMenus
-softdepend: [Vault, PlaceholderAPI]
+softdepend: [Vault, PlaceholderAPI, HeadDatabase, ItemsAdder, Oraxen, Nexo]

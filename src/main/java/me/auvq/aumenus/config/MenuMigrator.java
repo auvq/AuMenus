@@ -2,8 +2,11 @@ package me.auvq.aumenus.config;
 
 import me.auvq.aumenus.AuMenus;
 import me.auvq.aumenus.util.Util;
-import org.bukkit.Bukkit;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -11,11 +14,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class MenuMigrator {
 
@@ -41,7 +47,9 @@ public final class MenuMigrator {
             Map.entry("[givepermission] ", "give_perm"),
             Map.entry("[takepermission] ", "take_perm"),
             Map.entry("[json] ", "json"),
+            Map.entry("[jsonbroadcast] ", "jsonbroadcast"),
             Map.entry("[chat] ", "chat"),
+            Map.entry("[broadcastsoundworld] ", "broadcast_sound_world"),
             Map.entry("[meta] ", "meta"),
             Map.entry("[placeholder] ", "placeholder")
     );
@@ -125,6 +133,7 @@ public final class MenuMigrator {
         try {
             YamlConfiguration dmConfig = YamlConfiguration.loadConfiguration(sourceFile);
             YamlConfiguration ourConfig = convertMenu(dmConfig, menuName);
+            replaceDmPlaceholders(ourConfig);
 
             outputFile.getParentFile().mkdirs();
             ourConfig.save(outputFile);
@@ -132,8 +141,7 @@ public final class MenuMigrator {
             return true;
         } catch (Exception e) {
             log(notifier, "&#FF474DFailed to migrate '" + menuName + "': " + e.getMessage());
-            plugin.getLogger().warning("Migration failed for " + menuName + ": " + e.getMessage());
-            e.printStackTrace();
+            plugin.getLogger().log(Level.WARNING, "Migration failed for " + menuName, e);
             return false;
         }
     }
@@ -232,9 +240,8 @@ public final class MenuMigrator {
             out.set(prefix + ".dynamic_amount", dynamicAmount);
         }
 
-        int priority = dmItem.getInt("priority", 0);
-        if (priority != 0) {
-            out.set(prefix + ".priority", priority);
+        if (dmItem.contains("priority")) {
+            out.set(prefix + ".priority", dmItem.getInt("priority"));
         }
 
         if (dmItem.getBoolean("update", false)) {
@@ -254,6 +261,9 @@ public final class MenuMigrator {
         }
         if (dmItem.contains("item_flags")) {
             out.set(prefix + ".item_flags", dmItem.getStringList("item_flags"));
+        }
+        if (dmItem.getBoolean("hide_tooltip", false)) {
+            out.set(prefix + ".hide_tooltip", true);
         }
         if (dmItem.getBoolean("unbreakable", false)) {
             out.set(prefix + ".unbreakable", true);
@@ -282,6 +292,7 @@ public final class MenuMigrator {
         convertActions(dmItem, "right_click_commands", out, prefix + ".on_right_click");
         convertActions(dmItem, "shift_left_click_commands", out, prefix + ".on_shift_left_click");
         convertActions(dmItem, "shift_right_click_commands", out, prefix + ".on_shift_right_click");
+        convertActions(dmItem, "middle_click_commands", out, prefix + ".on_middle_click");
 
         convertRequirement(dmItem, "view_requirement", out, prefix + ".view_require");
         convertRequirement(dmItem, "click_requirement", out, prefix + ".click_require");
@@ -289,6 +300,7 @@ public final class MenuMigrator {
         convertRequirement(dmItem, "right_click_requirement", out, prefix + ".right_click_require");
         convertRequirement(dmItem, "shift_left_click_requirement", out, prefix + ".shift_left_click_require");
         convertRequirement(dmItem, "shift_right_click_requirement", out, prefix + ".shift_right_click_require");
+        convertRequirement(dmItem, "middle_click_requirement", out, prefix + ".middle_click_require");
     }
 
     private void convertActions(@NotNull ConfigurationSection source, @NotNull String sourceKey,
@@ -309,7 +321,6 @@ public final class MenuMigrator {
         String action = dmAction.trim();
 
         int delayStart = action.indexOf("<delay=");
-        int chanceStart = action.indexOf("<chance=");
         int delay = 0;
         double chance = 100;
 
@@ -320,6 +331,7 @@ public final class MenuMigrator {
                 action = action.substring(0, delayStart) + action.substring(delayEnd + 1);
             }
         }
+        int chanceStart = action.indexOf("<chance=");
         if (chanceStart != -1) {
             int chanceEnd = action.indexOf(">", chanceStart);
             if (chanceEnd != -1) {
@@ -387,58 +399,10 @@ public final class MenuMigrator {
             String checkPath = outKey + ".checks." + reqName;
 
             out.set(checkPath + ".type", convertRequirementType(type));
+            convertRequirementFields(type, req, out, checkPath);
 
-            switch (type.toLowerCase().replace(" ", "_")) {
-                case "has_permission" -> out.set(checkPath + ".permission", req.getString("permission"));
-                case "has_money" -> out.set(checkPath + ".amount", req.getDouble("amount"));
-                case "has_exp" -> {
-                    out.set(checkPath + ".amount", req.getInt("amount"));
-                    if (req.getBoolean("level", false)) {
-                        out.set(checkPath + ".level", true);
-                    }
-                }
-                case "has_item" -> {
-                    out.set(checkPath + ".material", req.getString("material"));
-                    out.set(checkPath + ".amount", req.getInt("amount", 1));
-                    if (req.contains("name")) {
-                        out.set(checkPath + ".name", req.getString("name"));
-                    }
-                    if (req.contains("lore")) {
-                        out.set(checkPath + ".lore", req.getString("lore"));
-                    }
-                }
-                case "string_equals", "string_equals_ignorecase", "string_contains" -> {
-                    out.set(checkPath + ".input", req.getString("input"));
-                    out.set(checkPath + ".output", req.getString("output"));
-                }
-                case "regex_matches" -> {
-                    out.set(checkPath + ".input", req.getString("input"));
-                    out.set(checkPath + ".regex", req.getString("regex"));
-                }
-                case "has_meta" -> {
-                    out.set(checkPath + ".key", req.getString("key"));
-                    out.set(checkPath + ".meta_type", req.getString("meta_type"));
-                    out.set(checkPath + ".value", req.getString("value"));
-                }
-                case "is_near" -> {
-                    out.set(checkPath + ".location", req.getString("location"));
-                    out.set(checkPath + ".distance", req.getDouble("distance"));
-                }
-                case "string_length" -> {
-                    out.set(checkPath + ".input", req.getString("input"));
-                    if (req.contains("min")) {
-                        out.set(checkPath + ".min", req.getInt("min"));
-                    }
-                    if (req.contains("max")) {
-                        out.set(checkPath + ".max", req.getInt("max"));
-                    }
-                }
-                default -> {
-                    if (type.startsWith("(") || COMPARATOR_TYPES.contains(type)) {
-                        out.set(checkPath + ".input", req.getString("input"));
-                        out.set(checkPath + ".output", req.getString("output"));
-                    }
-                }
+            if (req.getBoolean("optional", false)) {
+                out.set(checkPath + ".optional", true);
             }
 
             convertActions(req, "deny_commands", out, checkPath + ".deny");
@@ -455,8 +419,116 @@ public final class MenuMigrator {
         convertActions(reqSection, "deny_commands", out, outKey + ".deny");
     }
 
+    private void convertRequirementFields(@NotNull String type, @NotNull ConfigurationSection req,
+                                           @NotNull YamlConfiguration out, @NotNull String checkPath) {
+        String normalized = type.toLowerCase().replace(" ", "_");
+        if (normalized.startsWith("!")) {
+            normalized = normalized.substring(1);
+        }
+        switch (normalized) {
+            case "has_permission" -> out.set(checkPath + ".permission", req.getString("permission"));
+            case "has_money" -> out.set(checkPath + ".amount", req.getDouble("amount"));
+            case "has_exp" -> convertHasExpFields(req, out, checkPath);
+            case "has_item" -> convertHasItemFields(req, out, checkPath);
+            case "string_equals", "string_equals_ignorecase", "string_contains" -> convertInputOutputFields(req, out, checkPath);
+            case "regex_matches" -> convertRegexFields(req, out, checkPath);
+            case "has_meta" -> convertHasMetaFields(req, out, checkPath);
+            case "is_near" -> convertIsNearFields(req, out, checkPath);
+            case "string_length" -> convertStringLengthFields(req, out, checkPath);
+            default -> convertComparatorFields(type, req, out, checkPath);
+        }
+    }
+
+    private void convertHasExpFields(@NotNull ConfigurationSection req,
+                                      @NotNull YamlConfiguration out, @NotNull String checkPath) {
+        out.set(checkPath + ".amount", req.getInt("amount"));
+        if (req.getBoolean("level", false)) {
+            out.set(checkPath + ".level", true);
+        }
+    }
+
+    private void convertHasItemFields(@NotNull ConfigurationSection req,
+                                       @NotNull YamlConfiguration out, @NotNull String checkPath) {
+        out.set(checkPath + ".material", req.getString("material"));
+        out.set(checkPath + ".amount", req.getInt("amount", 1));
+        if (req.contains("name")) {
+            out.set(checkPath + ".name", req.getString("name"));
+        }
+        if (req.contains("lore")) {
+            out.set(checkPath + ".lore", req.getString("lore"));
+        }
+    }
+
+    private void convertInputOutputFields(@NotNull ConfigurationSection req,
+                                            @NotNull YamlConfiguration out, @NotNull String checkPath) {
+        out.set(checkPath + ".input", req.getString("input"));
+        out.set(checkPath + ".output", req.getString("output"));
+    }
+
+    private void convertRegexFields(@NotNull ConfigurationSection req,
+                                     @NotNull YamlConfiguration out, @NotNull String checkPath) {
+        out.set(checkPath + ".input", req.getString("input"));
+        out.set(checkPath + ".regex", req.getString("regex"));
+    }
+
+    private void convertHasMetaFields(@NotNull ConfigurationSection req,
+                                       @NotNull YamlConfiguration out, @NotNull String checkPath) {
+        out.set(checkPath + ".key", req.getString("key"));
+        out.set(checkPath + ".meta_type", req.getString("meta_type"));
+        out.set(checkPath + ".value", req.getString("value"));
+    }
+
+    private void convertIsNearFields(@NotNull ConfigurationSection req,
+                                      @NotNull YamlConfiguration out, @NotNull String checkPath) {
+        out.set(checkPath + ".location", req.getString("location"));
+        out.set(checkPath + ".distance", req.getDouble("distance"));
+    }
+
+    private void convertStringLengthFields(@NotNull ConfigurationSection req,
+                                            @NotNull YamlConfiguration out, @NotNull String checkPath) {
+        out.set(checkPath + ".input", req.getString("input"));
+        if (req.contains("min")) {
+            out.set(checkPath + ".min", req.getInt("min"));
+        }
+        if (req.contains("max")) {
+            out.set(checkPath + ".max", req.getInt("max"));
+        }
+    }
+
+    private void convertComparatorFields(@NotNull String type, @NotNull ConfigurationSection req,
+                                          @NotNull YamlConfiguration out, @NotNull String checkPath) {
+        if (!type.startsWith("(") && !COMPARATOR_TYPES.contains(type)) {
+            return;
+        }
+        out.set(checkPath + ".input", req.getString("input"));
+        out.set(checkPath + ".output", req.getString("output"));
+    }
+
     private @NotNull String convertRequirementType(@NotNull String dmType) {
-        return dmType.toLowerCase().replace(" ", "_");
+        String cleaned = dmType.toLowerCase().replace(" ", "_");
+        if (cleaned.startsWith("(") && cleaned.endsWith(")")) {
+            cleaned = cleaned.substring(1, cleaned.length() - 1);
+        }
+        return cleaned;
+    }
+
+    private void replaceDmPlaceholders(@NotNull YamlConfiguration config) {
+        String yaml = config.saveToString();
+        if (!yaml.contains("%deluxemenus_")) {
+            return;
+        }
+        yaml = yaml.replace("%deluxemenus_meta_", "%aumenus_meta_");
+        YamlConfiguration replaced = new YamlConfiguration();
+        try {
+            replaced.loadFromString(yaml);
+        } catch (InvalidConfigurationException e) {
+            return;
+        }
+        for (String key : replaced.getKeys(true)) {
+            if (!replaced.isConfigurationSection(key)) {
+                config.set(key, replaced.get(key));
+            }
+        }
     }
 
     private @NotNull List<File> findYamlFiles(@NotNull File directory) {
@@ -476,6 +548,182 @@ public final class MenuMigrator {
             }
         }
         return result;
+    }
+
+    private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.builder()
+            .character('&')
+            .hexColors()
+            .build();
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+    private static final Pattern HEX_PATTERN = Pattern.compile("&#([0-9a-fA-F]{6})");
+    private static final Pattern SECTION_HEX_PATTERN = Pattern.compile("§x(§[0-9a-fA-F]){6}");
+    private static final Pattern SECTION_CODE_PATTERN = Pattern.compile("§([0-9a-fk-orA-FK-OR])");
+
+    public boolean convertToMiniMessage(@NotNull File file) {
+        try {
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+
+            convertStringKey(config, "title");
+            convertStringKey(config, "args_usage");
+            convertActionList(config, "on_open");
+            convertActionList(config, "on_close");
+
+            convertItemSection(config.getConfigurationSection("items"));
+            convertItemSection(config.getConfigurationSection("page_items"));
+
+            config.save(file);
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to convert " + file.getName() + " to MiniMessage: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void convertItemSection(@Nullable ConfigurationSection section) {
+        if (section == null) {
+            return;
+        }
+        for (String itemName : section.getKeys(false)) {
+            ConfigurationSection item = section.getConfigurationSection(itemName);
+            if (item == null) {
+                continue;
+            }
+            convertStringKey(item, "name");
+            convertStringList(item, "lore");
+            convertActionList(item, "on_click");
+            convertActionList(item, "on_left_click");
+            convertActionList(item, "on_right_click");
+            convertActionList(item, "on_shift_left_click");
+            convertActionList(item, "on_shift_right_click");
+            convertActionList(item, "on_middle_click");
+            convertRequirementDeny(item, "click_require");
+            convertRequirementDeny(item, "left_click_require");
+            convertRequirementDeny(item, "right_click_require");
+            convertRequirementDeny(item, "shift_left_click_require");
+            convertRequirementDeny(item, "shift_right_click_require");
+            convertRequirementDeny(item, "middle_click_require");
+            convertRequirementDeny(item, "view_require");
+        }
+    }
+
+    private void convertStringKey(@NotNull ConfigurationSection section, @NotNull String key) {
+        String value = section.getString(key);
+        if (value == null || !hasLegacyCodes(value)) {
+            return;
+        }
+        section.set(key, legacyToMiniMessage(value));
+    }
+
+    private void convertStringList(@NotNull ConfigurationSection section, @NotNull String key) {
+        List<String> list = section.getStringList(key);
+        if (list.isEmpty()) {
+            return;
+        }
+        boolean changed = false;
+        List<String> converted = new ArrayList<>();
+        for (String line : list) {
+            if (hasLegacyCodes(line)) {
+                converted.add(legacyToMiniMessage(line));
+                changed = true;
+            } else {
+                converted.add(line);
+            }
+        }
+        if (changed) {
+            section.set(key, converted);
+        }
+    }
+
+    private void convertActionList(@NotNull ConfigurationSection section, @NotNull String key) {
+        List<?> list = section.getList(key);
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        List<Object> converted = new ArrayList<>();
+        boolean changed = false;
+        for (Object entry : list) {
+            if (entry instanceof String str && hasLegacyCodes(str)) {
+                converted.add(legacyToMiniMessage(str));
+                changed = true;
+                continue;
+            }
+            if (entry instanceof Map<?, ?> map) {
+                Object result = convertActionMapLegacy(map);
+                converted.add(result);
+                if (result != entry) {
+                    changed = true;
+                }
+                continue;
+            }
+            converted.add(entry);
+        }
+        if (changed) {
+            section.set(key, converted);
+        }
+    }
+
+    private static final Set<String> LEGACY_CONVERTIBLE_KEYS = Set.of(
+            "msg", "message", "broadcast", "minimessage", "minibroadcast"
+    );
+
+    private @NotNull Object convertActionMapLegacy(@NotNull Map<?, ?> map) {
+        Map<String, Object> newMap = new LinkedHashMap<>();
+        boolean mapChanged = false;
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            String entryKey = entry.getKey().toString();
+            Object entryValue = entry.getValue();
+            if (entryValue instanceof String str && hasLegacyCodes(str)
+                    && LEGACY_CONVERTIBLE_KEYS.contains(entryKey)) {
+                newMap.put(entryKey, legacyToMiniMessage(str));
+                mapChanged = true;
+                continue;
+            }
+            newMap.put(entryKey, entryValue);
+        }
+        if (!mapChanged) {
+            return map;
+        }
+        return newMap;
+    }
+
+    private void convertRequirementDeny(@NotNull ConfigurationSection parent, @NotNull String key) {
+        ConfigurationSection section = parent.getConfigurationSection(key);
+        if (section == null) {
+            return;
+        }
+        convertActionList(section, "deny");
+        ConfigurationSection checks = section.getConfigurationSection("checks");
+        if (checks == null) {
+            return;
+        }
+        for (String checkName : checks.getKeys(false)) {
+            ConfigurationSection check = checks.getConfigurationSection(checkName);
+            if (check != null) {
+                convertActionList(check, "deny");
+            }
+        }
+    }
+
+    private static boolean hasLegacyCodes(@NotNull String text) {
+        return text.contains("&") || text.contains("§");
+    }
+
+    private static @NotNull String legacyToMiniMessage(@NotNull String input) {
+        String prepared = input;
+
+        Matcher sectionHexMatcher = SECTION_HEX_PATTERN.matcher(prepared);
+        StringBuilder sectionHexBuilder = new StringBuilder();
+        while (sectionHexMatcher.find()) {
+            String hex = sectionHexMatcher.group().replaceAll("§[xX]|§", "");
+            sectionHexMatcher.appendReplacement(sectionHexBuilder, "&#" + hex);
+        }
+        sectionHexMatcher.appendTail(sectionHexBuilder);
+        prepared = sectionHexBuilder.toString();
+
+        prepared = SECTION_CODE_PATTERN.matcher(prepared).replaceAll("&$1");
+
+        Component component = LEGACY_SERIALIZER.deserialize(prepared);
+        return MINI_MESSAGE.serialize(component);
     }
 
     private void log(@Nullable Player player, @NotNull String message) {

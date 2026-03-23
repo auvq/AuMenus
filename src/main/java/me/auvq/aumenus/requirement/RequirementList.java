@@ -85,12 +85,5 @@ public final class RequirementList {
         return count;
     }
 
-    public @NotNull List<Requirement> getFailedRequirements(@NotNull Player player,
-                                                             @NotNull RequirementRegistry registry) {
-        return requirements.stream()
-                .filter(req -> !registry.evaluate(player, req))
-                .toList();
-    }
-
     public record EvaluationResult(boolean passed, @NotNull List<Requirement> failed) {}
 }

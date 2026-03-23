@@ -14,9 +14,9 @@ import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 public final class MenuHolder implements InventoryHolder {
@@ -36,14 +36,19 @@ public final class MenuHolder implements InventoryHolder {
     @Setter
     private boolean reloading;
 
-    private ScheduledTask updateTask;
+    private @Nullable ScheduledTask updateTask;
 
     public MenuHolder(@NotNull Menu menu, @NotNull Player player, @NotNull Map<String, String> arguments) {
+        this(menu, player, arguments, 1);
+    }
+
+    public MenuHolder(@NotNull Menu menu, @NotNull Player player, @NotNull Map<String, String> arguments,
+                       int initialPage) {
         this.menu = menu;
         this.playerId = player.getUniqueId();
         this.arguments = arguments;
-        this.activeItems = new HashMap<>();
-        this.currentPage = 1;
+        this.activeItems = new ConcurrentHashMap<>();
+        this.currentPage = initialPage;
         this.updating = false;
         this.lastClickTime = 0;
 

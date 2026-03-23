@@ -138,6 +138,12 @@ public enum RequirementType {
         return input != null && output != null && input.contains(output);
     }),
 
+    STRING_CONTAINS_IGNORECASE(List.of("string_contains_ignorecase", "string contains ignorecase"), (player, config) -> {
+        String input = (String) config.get("input");
+        String output = (String) config.get("output");
+        return input != null && output != null && input.toLowerCase().contains(output.toLowerCase());
+    }),
+
     STRING_LENGTH(List.of("string_length", "string length"), (player, config) -> {
         String input = (String) config.get("input");
         if (input == null) {
@@ -237,9 +243,9 @@ public enum RequirementType {
             return -1;
         }
         try {
-            double a = Double.parseDouble(input);
-            double b = Double.parseDouble(output);
-            return Double.compare(a, b);
+            double inputValue = Double.parseDouble(input);
+            double outputValue = Double.parseDouble(output);
+            return Double.compare(inputValue, outputValue);
         } catch (NumberFormatException e) {
             return input.compareTo(output);
         }

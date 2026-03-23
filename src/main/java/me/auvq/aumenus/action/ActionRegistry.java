@@ -4,6 +4,7 @@ import me.auvq.aumenus.AuMenus;
 import me.auvq.aumenus.menu.Menu;
 import me.auvq.aumenus.menu.MenuHolder;
 import me.auvq.aumenus.util.Util;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -62,10 +63,11 @@ public final class ActionRegistry {
         if (!player.isOnline()) return;
 
         String type = action.getType().toLowerCase();
+        String value = resolveActionPlaceholders(player, action.getValue());
 
         switch (type) {
             case "open", "openguimenu", "openmenu" -> {
-                handleOpenMenu(player, action.getValue());
+                handleOpenMenu(player, value);
                 return;
             }
             case "refresh" -> {
@@ -73,7 +75,7 @@ public final class ActionRegistry {
                 return;
             }
             case "meta" -> {
-                plugin.getMetaStore().executeMetaAction(player, action.getValue());
+                plugin.getMetaStore().executeMetaAction(player, value);
                 return;
             }
             case "prev_page" -> {
@@ -101,9 +103,8 @@ public final class ActionRegistry {
         }
 
         try {
-            String resolvedValue = resolveActionPlaceholders(player, action.getValue());
-            executor.execute(player, resolvedValue);
-        } catch (Exception e) {
+            executor.execute(player, value);
+        } catch (RuntimeException e) {
             plugin.getLogger().warning("Failed to execute action '" + action.getType()
                     + "': " + e.getMessage());
         }
@@ -114,28 +115,51 @@ public final class ActionRegistry {
         String menuName = parts[0];
 
         Optional<Menu> found = plugin.getMenuRegistry().findByName(menuName);
-        if (found.isEmpty()) return;
+        if (found.isEmpty()) {
+            return;
+        }
 
         Menu menu = found.get();
-        Map<String, String> args = new HashMap<>();
+        Map<String, String> args = parseOpenMenuArgs(menu, parts);
 
-        if (parts.length > 1) {
-            String[] argValues = parts[1].split("\\s+");
-            List<String> argNames = menu.getArgs();
-            for (int i = 0; i < Math.min(argNames.size(), argValues.length); i++) {
-                args.put(argNames.get(i), argValues[i]);
-            }
+        MenuHolder current = plugin.getMenuRegistry().getOpenMenu(player.getUniqueId()).orElse(null);
+        if (current != null) {
+            current.setReloading(true);
         }
 
         plugin.openMenu(player, menu, args);
     }
 
+    private @NotNull Map<String, String> parseOpenMenuArgs(@NotNull Menu menu, @NotNull String[] parts) {
+        Map<String, String> args = new HashMap<>();
+        if (parts.length <= 1) {
+            return args;
+        }
+
+        String[] argValues = parts[1].split("\\s+");
+        List<String> argNames = menu.getArgs();
+        for (int i = 0; i < Math.min(argNames.size(), argValues.length); i++) {
+            String sanitized = MiniMessage.miniMessage()
+                    .escapeTags(argValues[i]);
+            args.put(argNames.get(i), sanitized);
+        }
+        return args;
+    }
+
     private void handleRefresh(@NotNull Player player) {
         MenuHolder holder = plugin.getMenuRegistry().getOpenMenu(player.getUniqueId()).orElse(null);
         if (holder == null) {
+            debugLog("Refresh: no tracked menu for " + player.getName());
             return;
         }
+        debugLog("Refresh: re-rendering '" + holder.getMenu().getName() + "' for " + player.getName());
         plugin.getMenuRenderer().render(holder);
+    }
+
+    private void debugLog(@NotNull String message) {
+        if (plugin.getConfig().getBoolean("debug")) {
+            plugin.getLogger().info("[Debug] " + message);
+        }
     }
 
     private void handlePageChange(@NotNull Player player, int delta) {
@@ -159,10 +183,11 @@ public final class ActionRegistry {
         boolean titleHasPagePlaceholder = menu.getTitle().contains("{page}")
                 || menu.getTitle().contains("{max_page}");
         if (titleHasPagePlaceholder) {
+            holder.stopUpdateTask();
             holder.setReloading(true);
-            MenuHolder newHolder = new MenuHolder(menu, player, holder.getArguments());
-            newHolder.setCurrentPage(newPage);
+            MenuHolder newHolder = new MenuHolder(menu, player, holder.getArguments(), newPage);
             plugin.getMenuRenderer().render(newHolder);
+            plugin.getMenuRegistry().trackOpen(player.getUniqueId(), newHolder);
             player.openInventory(newHolder.getInventory());
             newHolder.startUpdateTask(plugin);
         } else {
@@ -257,9 +282,29 @@ public final class ActionRegistry {
         if (value.isEmpty()) {
             return value;
         }
-        String result = Util.resolveBuiltInPlaceholders(player, value);
+
+        String result = replaceHolderArgs(player, value);
+        result = Util.resolveBuiltInPlaceholders(player, result);
+
         if (plugin.getHookProvider().isPapiEnabled() && result.contains("%")) {
             result = plugin.getHookProvider().papi().setPlaceholders(player, result);
+        }
+        return result;
+    }
+
+    private @NotNull String replaceHolderArgs(@NotNull Player player, @NotNull String value) {
+        if (!value.contains("{")) {
+            return value;
+        }
+
+        MenuHolder holder = plugin.getMenuRegistry().getOpenMenu(player.getUniqueId()).orElse(null);
+        if (holder == null) {
+            return value;
+        }
+
+        String result = value;
+        for (Map.Entry<String, String> arg : holder.getArguments().entrySet()) {
+            result = result.replace("{" + arg.getKey() + "}", arg.getValue());
         }
         return result;
     }

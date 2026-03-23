@@ -21,6 +21,7 @@ public final class MenuItem {
     private final @Nullable String dynamicAmount;
     private final @NotNull List<Integer> slots;
     private final int priority;
+    private final int configOrder;
     private final boolean update;
 
     private final @Nullable List<String> enchantments;

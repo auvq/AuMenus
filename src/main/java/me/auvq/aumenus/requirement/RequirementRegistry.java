@@ -166,7 +166,7 @@ public final class RequirementRegistry {
                     .build());
         }
 
-        int minimum = map.containsKey("minimum") ? ((Number) map.get("minimum")).intValue() : requirements.size();
+        int minimum = map.containsKey("minimum") ? ((Number) map.get("minimum")).intValue() : 0;
         boolean stopAtSuccess = Boolean.TRUE.equals(map.get("stop_at_success"));
         List<Action> denyActions = map.containsKey("deny") ? parseDenyActions(map.get("deny")) : List.of();
 

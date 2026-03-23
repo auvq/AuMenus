@@ -118,33 +118,13 @@ public final class MenuRenderer {
     public @NotNull RequirementList resolveRequirementPlaceholders(@NotNull RequirementList list,
                                                                       @NotNull Player player,
                                                                       @NotNull MenuHolder holder) {
-        boolean hasPlaceholders = false;
-        for (Requirement req : list.getRequirements()) {
-            for (Object value : req.getConfig().values()) {
-                if (value instanceof String str && (str.contains("{") || str.contains("%"))) {
-                    hasPlaceholders = true;
-                    break;
-                }
-            }
-            if (hasPlaceholders) {
-                break;
-            }
-        }
-        if (!hasPlaceholders) {
+        if (!containsPlaceholders(list)) {
             return list;
         }
 
         List<Requirement> resolvedRequirements = new ArrayList<>();
         for (Requirement req : list.getRequirements()) {
-            Map<String, Object> resolvedConfig = new LinkedHashMap<>();
-            for (Map.Entry<String, Object> entry : req.getConfig().entrySet()) {
-                Object value = entry.getValue();
-                if (value instanceof String str) {
-                    resolvedConfig.put(entry.getKey(), resolvePlaceholders(player, str, holder));
-                } else {
-                    resolvedConfig.put(entry.getKey(), value);
-                }
-            }
+            Map<String, Object> resolvedConfig = resolveConfig(req.getConfig(), player, holder);
             resolvedRequirements.add(Requirement.builder()
                     .name(req.getName())
                     .type(req.getType())
@@ -161,6 +141,32 @@ public final class MenuRenderer {
                 .denyActions(list.getDenyActions())
                 .successActions(list.getSuccessActions())
                 .build();
+    }
+
+    private boolean containsPlaceholders(@NotNull RequirementList list) {
+        for (Requirement req : list.getRequirements()) {
+            for (Object value : req.getConfig().values()) {
+                if (value instanceof String str && (str.contains("{") || str.contains("%"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private @NotNull Map<String, Object> resolveConfig(@NotNull Map<String, Object> config,
+                                                         @NotNull Player player,
+                                                         @NotNull MenuHolder holder) {
+        Map<String, Object> resolved = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : config.entrySet()) {
+            Object value = entry.getValue();
+            if (value instanceof String str) {
+                resolved.put(entry.getKey(), resolvePlaceholders(player, str, holder));
+            } else {
+                resolved.put(entry.getKey(), value);
+            }
+        }
+        return resolved;
     }
 
     private @NotNull String resolvePlaceholders(@NotNull Player player,

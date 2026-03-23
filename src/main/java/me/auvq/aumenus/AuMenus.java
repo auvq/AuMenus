@@ -25,15 +25,11 @@ import me.auvq.aumenus.requirement.RequirementRegistry;
 import me.auvq.aumenus.util.Util;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandMap;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +40,6 @@ public final class AuMenus extends JavaPlugin {
 
     @Getter
     private static AuMenus instance;
-
-    public static final int MINECRAFT_VERSION = parseMinecraftVersion();
 
     @Getter
     private HookProvider hookProvider;
@@ -109,6 +103,7 @@ public final class AuMenus extends JavaPlugin {
         //noinspection UnstableApiUsage
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             MenuCommand.register(event.registrar(), this);
+            MenuCommand.registerMenuCommands(event.registrar(), this);
         });
 
         new Metrics(this, 30368);
@@ -119,16 +114,12 @@ public final class AuMenus extends JavaPlugin {
     @Override
     public void onDisable() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            MenuHolder holder = menuRegistry.getOpenMenu(player.getUniqueId()).orElse(null);
-            if (holder != null) {
-                holder.stopUpdateTask();
-            }
-            player.getScheduler().run(this, task -> player.closeInventory(), null);
+            menuRegistry.getOpenMenu(player.getUniqueId()).ifPresent(MenuHolder::stopUpdateTask);
+            player.closeInventory();
         }
 
         getServer().getMessenger().unregisterOutgoingPluginChannel(this, "BungeeCord");
         getLogger().info("AuMenus disabled.");
-        instance = null;
     }
 
     public void openMenu(@NotNull Player player, @NotNull Menu menu, @NotNull Map<String, String> args) {
@@ -207,13 +198,12 @@ public final class AuMenus extends JavaPlugin {
             if (newMenu.getSize() != holder.getMenu().getSize()
                     || newMenu.getInventoryType() != holder.getMenu().getInventoryType()) {
                 player.closeInventory();
-                openMenu(player, newMenu, holder.getArguments());
-            } else {
-                MenuHolder newHolder = new MenuHolder(newMenu, player, holder.getArguments());
-                menuRenderer.render(newHolder);
-                player.openInventory(newHolder.getInventory());
-                newHolder.startUpdateTask(this);
             }
+            MenuHolder newHolder = new MenuHolder(newMenu, player, holder.getArguments());
+            menuRenderer.render(newHolder);
+            menuRegistry.trackOpen(player.getUniqueId(), newHolder);
+            player.openInventory(newHolder.getInventory());
+            newHolder.startUpdateTask(this);
         }, null);
     }
 
@@ -228,42 +218,56 @@ public final class AuMenus extends JavaPlugin {
         Map<String, String> resolved = new HashMap<>(providedArgs);
 
         for (String argName : argNames) {
-            if (!resolved.containsKey(argName)) {
-                if (menu.getArgsUsage() != null) {
-                    player.sendMessage(Util.parse(menu.getArgsUsage()));
-                }
-                return null;
+            if (resolved.containsKey(argName)) {
+                continue;
             }
+            if (menu.getArgsUsage() != null) {
+                player.sendMessage(Util.parse(menu.getArgsUsage()));
+            }
+            return null;
         }
 
-        if (menu.getArgRequirements() != null) {
-            for (Map.Entry<String, RequirementList> entry
-                    : menu.getArgRequirements().entrySet()) {
-                if (!entry.getValue().evaluate(player, requirementRegistry)) {
-                    List<Action> denyActions = entry.getValue().getDenyActions();
-                    if (!denyActions.isEmpty()) {
-                        List<Action> resolvedDeny = denyActions.stream()
-                                .map(action -> {
-                                    String val = action.getValue();
-                                    for (Map.Entry<String, String> arg : resolved.entrySet()) {
-                                        val = val.replace("{" + arg.getKey() + "}", arg.getValue());
-                                    }
-                                    return new Action(action.getType(), val, action.getDelay(), action.getChance());
-                                })
-                                .toList();
-                        actionRegistry.executeActions(player, resolvedDeny);
-                    }
-                    return null;
-                }
+        if (menu.getArgRequirements() == null) {
+            return resolved;
+        }
+
+        for (Map.Entry<String, RequirementList> entry : menu.getArgRequirements().entrySet()) {
+            if (entry.getValue().evaluate(player, requirementRegistry)) {
+                continue;
             }
+            executeArgDenyActions(player, entry.getValue().getDenyActions(), resolved);
+            return null;
         }
 
         return resolved;
     }
 
+    private void executeArgDenyActions(@NotNull Player player,
+                                        @NotNull List<Action> denyActions,
+                                        @NotNull Map<String, String> resolved) {
+        if (denyActions.isEmpty()) {
+            return;
+        }
+
+        List<Action> resolvedDeny = denyActions.stream()
+                .map(action -> resolveActionArgs(action, resolved))
+                .toList();
+        actionRegistry.executeActions(player, resolvedDeny);
+    }
+
+    private @NotNull Action resolveActionArgs(@NotNull Action action,
+                                               @NotNull Map<String, String> args) {
+        String val = action.getValue();
+        for (Map.Entry<String, String> arg : args.entrySet()) {
+            val = val.replace("{" + arg.getKey() + "}", arg.getValue());
+        }
+        return new Action(action.getType(), val, action.getDelay(), action.getChance());
+    }
+
     private void saveDefaultMenus() {
         File menusDir = new File(getDataFolder(), "menus");
-        if (menusDir.exists() && menusDir.listFiles() != null && menusDir.listFiles().length > 0) {
+        File[] existing = menusDir.listFiles();
+        if (existing != null && existing.length > 0) {
             return;
         }
         menusDir.mkdirs();
@@ -274,53 +278,10 @@ public final class AuMenus extends JavaPlugin {
         }
     }
 
-    public static boolean isVersionAtLeast(int major, int minor, int patch) {
-        return MINECRAFT_VERSION >= (major * 10000 + minor * 100 + patch);
-    }
-
     public void registerMenuCommands() {
-        CommandMap commandMap = Bukkit.getCommandMap();
-        for (Menu menu : menuRegistry.all()) {
-            if (menu.getCommand() == null || menu.getCommand().isEmpty() || !menu.isRegisterCommand()) {
-                continue;
-            }
-            String cmd = menu.getCommand().toLowerCase();
-            if (commandMap.getCommand(cmd) != null) {
-                continue;
-            }
-            List<String> allAliases = new ArrayList<>(menu.getCommandAliases());
-            Command menuCommand = new Command(cmd, "", "/" + cmd, allAliases) {
-                @Override
-                public boolean execute(@NotNull CommandSender sender, @NotNull String label, String[] args) {
-                    if (!(sender instanceof Player player)) {
-                        sender.sendMessage(Util.parse("<red>Only players can use this command.</red>"));
-                        return true;
-                    }
-                    Map<String, String> menuArgs = new HashMap<>();
-                    for (int i = 0; i < Math.min(menu.getArgs().size(), args.length); i++) {
-                        menuArgs.put(menu.getArgs().get(i), args[i]);
-                    }
-                    openMenu(player, menu, menuArgs);
-                    return true;
-                }
-            };
-            commandMap.register("aumenus", menuCommand);
-        }
-
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.getScheduler().run(this, task -> player.updateCommands(), null);
         }
     }
 
-    private static int parseMinecraftVersion() {
-        String version = Bukkit.getMinecraftVersion();
-        String[] parts = version.split("\\.");
-        if (parts.length >= 2) {
-            int major = Integer.parseInt(parts[0]);
-            int minor = Integer.parseInt(parts[1]);
-            int patch = parts.length >= 3 ? Integer.parseInt(parts[2]) : 0;
-            return major * 10000 + minor * 100 + patch;
-        }
-        return 12006;
-    }
 }

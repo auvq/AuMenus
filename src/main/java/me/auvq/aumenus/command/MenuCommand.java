@@ -17,6 +17,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,6 +46,56 @@ public final class MenuCommand {
                 .then(migrateSubcommand(plugin));
 
         registrar.register(root.build(), "AuMenus main command", List.of("am"));
+    }
+
+    public static void registerMenuCommands(@NotNull Commands registrar, @NotNull AuMenus plugin) {
+        for (Menu menu : plugin.getMenuRegistry().all()) {
+            if (menu.getCommand() == null || menu.getCommand().isEmpty() || !menu.isRegisterCommand()) {
+                continue;
+            }
+
+            String menuName = menu.getName();
+            List<String> aliases = menu.getCommandAliases().stream()
+                    .map(String::toLowerCase).toList();
+
+            registrar.register(
+                    Commands.literal(menu.getCommand().toLowerCase())
+                            .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("args", StringArgumentType.greedyString())
+                                    .executes(context -> openMenuFromCommand(context, plugin, menuName)))
+                            .executes(context -> openMenuFromCommand(context, plugin, menuName))
+                            .build(),
+                    "Opens the " + menuName + " menu",
+                    aliases
+            );
+        }
+    }
+
+    private static int openMenuFromCommand(@NotNull CommandContext<CommandSourceStack> context,
+                                            @NotNull AuMenus plugin,
+                                            @NotNull String menuName) {
+        if (!(context.getSource().getSender() instanceof Player player)) {
+            context.getSource().getSender().sendMessage(Util.parse("<red>Only players can use this command.</red>"));
+            return 0;
+        }
+
+        Menu menu = plugin.getMenuRegistry().findByName(menuName).orElse(null);
+        if (menu == null) {
+            return 0;
+        }
+
+        Map<String, String> menuArgs = new HashMap<>();
+        try {
+            String argsStr = StringArgumentType.getString(context, "args");
+            String[] argValues = argsStr.split("\\s+");
+            for (int i = 0; i < Math.min(menu.getArgs().size(), argValues.length); i++) {
+                String sanitized = MiniMessage.miniMessage().escapeTags(argValues[i]);
+                menuArgs.put(menu.getArgs().get(i), sanitized);
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        plugin.openMenu(player, menu, menuArgs);
+        return 1;
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> openSubcommand(@NotNull AuMenus plugin) {
@@ -76,7 +127,7 @@ public final class MenuCommand {
 
     private static int handleOpen(@NotNull CommandContext<CommandSourceStack> context,
                                    @NotNull AuMenus plugin,
-                                   String targetName) {
+                                   @Nullable String targetName) {
         CommandSender sender = context.getSource().getSender();
         String menuName = StringArgumentType.getString(context, "menu");
 
@@ -305,7 +356,7 @@ public final class MenuCommand {
 
     private static int handleMeta(@NotNull CommandContext<CommandSourceStack> context,
                                    @NotNull AuMenus plugin,
-                                   String value) {
+                                   @Nullable String value) {
         CommandSender sender = context.getSource().getSender();
         String playerName = StringArgumentType.getString(context, "player");
         String operation = StringArgumentType.getString(context, "operation").toLowerCase();
@@ -388,23 +439,39 @@ public final class MenuCommand {
     private static LiteralArgumentBuilder<CommandSourceStack> migrateSubcommand(@NotNull AuMenus plugin) {
         return Commands.literal("migrate")
                 .requires(source -> source.getSender().hasPermission("aumenus.admin"))
-                .executes(context -> {
-                    CommandSender sender = context.getSource().getSender();
-                    return handleMigrateAll(sender, plugin);
-                })
-                .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("menu", StringArgumentType.word())
-                        .suggests((context, builder) -> {
-                            plugin.getMenuMigrator().listAvailableFiles().forEach(builder::suggest);
-                            return builder.buildFuture();
-                        })
+                .then(Commands.literal("deluxemenus")
                         .executes(context -> {
                             CommandSender sender = context.getSource().getSender();
-                            String name = StringArgumentType.getString(context, "menu");
-                            return handleMigrateSingle(sender, plugin, name);
-                        }));
+                            return handleDmMigrateAll(sender, plugin);
+                        })
+                        .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("menu", StringArgumentType.word())
+                                .suggests((context, builder) -> {
+                                    plugin.getMenuMigrator().listAvailableFiles().forEach(builder::suggest);
+                                    return builder.buildFuture();
+                                })
+                                .executes(context -> {
+                                    CommandSender sender = context.getSource().getSender();
+                                    String name = StringArgumentType.getString(context, "menu");
+                                    return handleDmMigrateSingle(sender, plugin, name);
+                                })))
+                .then(Commands.literal("minimessage")
+                        .executes(context -> {
+                            CommandSender sender = context.getSource().getSender();
+                            return handleMiniMessageMigrateAll(sender, plugin);
+                        })
+                        .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("menu", StringArgumentType.word())
+                                .suggests((context, builder) -> {
+                                    plugin.getMenuRegistry().all().forEach(menu -> builder.suggest(menu.getName()));
+                                    return builder.buildFuture();
+                                })
+                                .executes(context -> {
+                                    CommandSender sender = context.getSource().getSender();
+                                    String name = StringArgumentType.getString(context, "menu");
+                                    return handleMiniMessageMigrateSingle(sender, plugin, name);
+                                })));
     }
 
-    private static int handleMigrateAll(@NotNull CommandSender sender, @NotNull AuMenus plugin) {
+    private static int handleDmMigrateAll(@NotNull CommandSender sender, @NotNull AuMenus plugin) {
         File source = plugin.getMenuMigrator().findSourceFolder();
         if (source == null) {
             sender.sendMessage(Util.parse("&#FF474DNo DeluxeMenus files found. Place DM menu files in:"));
@@ -420,8 +487,8 @@ public final class MenuCommand {
         return 1;
     }
 
-    private static int handleMigrateSingle(@NotNull CommandSender sender, @NotNull AuMenus plugin,
-                                            @NotNull String name) {
+    private static int handleDmMigrateSingle(@NotNull CommandSender sender, @NotNull AuMenus plugin,
+                                              @NotNull String name) {
         File source = plugin.getMenuMigrator().findSourceFolder();
         if (source == null) {
             sender.sendMessage(Util.parse("&#FF474DNo DeluxeMenus files found."));
@@ -433,6 +500,43 @@ public final class MenuCommand {
             sender.sendMessage(Util.parse("&#00FF7FRun &f/am reload &#00FF7Fto load the migrated menu."));
         } else {
             sender.sendMessage(Util.parse("&#FF474DCould not migrate '" + name + "'."));
+        }
+        return 1;
+    }
+
+    private static int handleMiniMessageMigrateAll(@NotNull CommandSender sender, @NotNull AuMenus plugin) {
+        File menusDir = new File(plugin.getDataFolder(), "menus");
+        File[] files = menusDir.listFiles((dir, name) -> name.endsWith(".yml") || name.endsWith(".yaml"));
+        if (files == null || files.length == 0) {
+            sender.sendMessage(Util.parse("&#FF474DNo menu files found."));
+            return 0;
+        }
+
+        int count = 0;
+        for (File file : files) {
+            if (plugin.getMenuMigrator().convertToMiniMessage(file)) {
+                count++;
+            }
+        }
+        sender.sendMessage(Util.parse("&#00FF7FConverted legacy codes in &f" + count + " &#00FF7Ffile(s). Run &f/am reload &#00FF7Fto apply."));
+        return 1;
+    }
+
+    private static int handleMiniMessageMigrateSingle(@NotNull CommandSender sender, @NotNull AuMenus plugin,
+                                                       @NotNull String name) {
+        File menuFile = new File(plugin.getDataFolder(), "menus/" + name + ".yml");
+        if (!menuFile.exists()) {
+            menuFile = new File(plugin.getDataFolder(), "menus/" + name + ".yaml");
+        }
+        if (!menuFile.exists()) {
+            sender.sendMessage(Util.parse("&#FF474DMenu file '" + name + "' not found."));
+            return 0;
+        }
+
+        if (plugin.getMenuMigrator().convertToMiniMessage(menuFile)) {
+            sender.sendMessage(Util.parse("&#00FF7FConverted '" + name + "' to MiniMessage. Run &f/am reload &#00FF7Fto apply."));
+        } else {
+            sender.sendMessage(Util.parse("&#FF474DFailed to convert '" + name + "'."));
         }
         return 1;
     }

@@ -6,6 +6,7 @@ import me.auvq.aumenus.action.ActionRegistry;
 import me.auvq.aumenus.util.Util;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -15,6 +16,7 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -79,10 +81,12 @@ public final class ChatInput implements Listener {
             return;
         }
 
+        String sanitized = MiniMessage.miniMessage()
+                .escapeTags(message).replace("\n", "").replace("\r", "");
         List<Action> resolved = pending.onSubmit.stream()
                 .map(action -> new Action(
                         action.getType(),
-                        action.getValue().replace("{input}", message),
+                        action.getValue().replace("{input}", sanitized),
                         action.getDelay(),
                         action.getChance()))
                 .toList();
@@ -107,7 +111,7 @@ public final class ChatInput implements Listener {
             String cancelWord,
             List<Action> onSubmit,
             List<Action> onCancel,
-            ScheduledTask timeoutTask
+            @Nullable ScheduledTask timeoutTask
     ) {
         void cancelTimeout() {
             if (timeoutTask != null) {

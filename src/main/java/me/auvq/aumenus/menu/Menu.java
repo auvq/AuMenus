@@ -27,6 +27,7 @@ public final class Menu {
     @Builder.Default
     private final boolean registerCommand = true;
     private final int updateInterval;
+    private final int clickCooldown;
 
     @Builder.Default
     private final @NotNull List<String> args = List.of();

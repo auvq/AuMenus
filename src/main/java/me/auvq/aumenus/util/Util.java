@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 
 public final class Util {
 
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.builder().strict(false).build();
     private static final Pattern HEX_PATTERN = Pattern.compile("&#([0-9a-fA-F]{6})");
     private static final Pattern LEGACY_CODE_PATTERN = Pattern.compile("&([0-9a-fk-orA-FK-OR])");
     private static final Pattern SECTION_HEX_PATTERN = Pattern.compile("§x(§[0-9a-fA-F]){6}");
@@ -40,7 +40,8 @@ public final class Util {
         StringBuilder sectionHexBuilder = new StringBuilder();
         while (sectionHexMatcher.find()) {
             String hex = sectionHexMatcher.group().replaceAll("§[xX]|§", "");
-            sectionHexMatcher.appendReplacement(sectionHexBuilder, "<color:#" + hex + ">");
+            sectionHexMatcher.appendReplacement(sectionHexBuilder,
+                    Matcher.quoteReplacement(FORMAT_RESET + "<color:#" + hex + ">"));
         }
         sectionHexMatcher.appendTail(sectionHexBuilder);
         result = sectionHexBuilder.toString();
@@ -50,7 +51,8 @@ public final class Util {
         Matcher hexMatcher = HEX_PATTERN.matcher(result);
         StringBuilder hexBuilder = new StringBuilder();
         while (hexMatcher.find()) {
-            hexMatcher.appendReplacement(hexBuilder, "<color:#" + hexMatcher.group(1) + ">");
+            hexMatcher.appendReplacement(hexBuilder,
+                    Matcher.quoteReplacement(FORMAT_RESET) + "<color:#" + hexMatcher.group(1) + ">");
         }
         hexMatcher.appendTail(hexBuilder);
         result = hexBuilder.toString();
@@ -64,7 +66,8 @@ public final class Util {
         if (input == null || input.isEmpty()) {
             return Component.empty();
         }
-        String prepared = input.contains("&") ? toLegacyMiniMessage(input) : input;
+        String prepared = (input.contains("&") || input.contains("§"))
+                ? toLegacyMiniMessage(input) : input;
         return MINI_MESSAGE.deserialize("<!italic>" + prepared);
     }
 
@@ -142,28 +145,31 @@ public final class Util {
         return result;
     }
 
+    private static final String FORMAT_RESET =
+            "<!obfuscated><!bold><!strikethrough><!underlined><!italic>";
+
     private static @NotNull String replaceLegacyCodes(@NotNull String input) {
         StringBuilder result = new StringBuilder();
         Matcher matcher = LEGACY_CODE_PATTERN.matcher(input);
         while (matcher.find()) {
             String code = matcher.group(1).toLowerCase();
             String replacement = switch (code) {
-                case "0" -> "<black>";
-                case "1" -> "<dark_blue>";
-                case "2" -> "<dark_green>";
-                case "3" -> "<dark_aqua>";
-                case "4" -> "<dark_red>";
-                case "5" -> "<dark_purple>";
-                case "6" -> "<gold>";
-                case "7" -> "<gray>";
-                case "8" -> "<dark_gray>";
-                case "9" -> "<blue>";
-                case "a" -> "<green>";
-                case "b" -> "<aqua>";
-                case "c" -> "<red>";
-                case "d" -> "<light_purple>";
-                case "e" -> "<yellow>";
-                case "f" -> "<white>";
+                case "0" -> FORMAT_RESET + "<black>";
+                case "1" -> FORMAT_RESET + "<dark_blue>";
+                case "2" -> FORMAT_RESET + "<dark_green>";
+                case "3" -> FORMAT_RESET + "<dark_aqua>";
+                case "4" -> FORMAT_RESET + "<dark_red>";
+                case "5" -> FORMAT_RESET + "<dark_purple>";
+                case "6" -> FORMAT_RESET + "<gold>";
+                case "7" -> FORMAT_RESET + "<gray>";
+                case "8" -> FORMAT_RESET + "<dark_gray>";
+                case "9" -> FORMAT_RESET + "<blue>";
+                case "a" -> FORMAT_RESET + "<green>";
+                case "b" -> FORMAT_RESET + "<aqua>";
+                case "c" -> FORMAT_RESET + "<red>";
+                case "d" -> FORMAT_RESET + "<light_purple>";
+                case "e" -> FORMAT_RESET + "<yellow>";
+                case "f" -> FORMAT_RESET + "<white>";
                 case "k" -> "<obfuscated>";
                 case "l" -> "<bold>";
                 case "m" -> "<strikethrough>";

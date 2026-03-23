@@ -57,6 +57,16 @@ Ticks between item refreshes for items with `update: true`. Defaults to the `def
 update_interval: 40
 ```
 
+### click_cooldown
+
+Per-menu click cooldown in ticks. Overrides the global `click_cooldown` from `config.yml`. Useful for sensitive menus like shops or confirmation dialogs.
+
+```yaml
+click_cooldown: 5
+```
+
+Set to `-1` (or omit) to use the global default. Set to `0` to disable cooldown for this menu.
+
 ### args
 
 Argument names the menu accepts. Passed via command or `/am open`.
@@ -159,6 +169,17 @@ Placeholder-resolved material:
 ```yaml
 material: "placeholder-%some_material_placeholder%"
 ```
+
+Third-party item plugins (requires the plugin installed):
+
+```yaml
+material: "hdb-12345"                          # HeadDatabase head by ID
+material: "itemsadder-namespace:item_name"     # ItemsAdder custom item
+material: "oraxen-custom_sword"                # Oraxen custom item
+material: "nexo-custom_armor"                  # Nexo custom item
+```
+
+If the plugin is not installed, a warning is logged and a stone block is shown instead.
 
 Equipment slots: `main_hand`, `off_hand`, `armor_helmet`, `armor_chestplate`, `armor_leggings`, `armor_boots`.
 

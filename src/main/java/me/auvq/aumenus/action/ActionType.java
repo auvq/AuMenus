@@ -27,18 +27,17 @@ public enum ActionType {
     }),
 
     COMMAND_EVENT(List.of("commandevent"), (player, value) -> {
-        player.chat(value.startsWith("/") ? value : "/" + value);
+        String cmd = value.startsWith("/") ? value : "/" + value;
+        player.getScheduler().run(AuMenus.getInstance(), task -> player.chat(cmd), null);
     }),
 
-    MESSAGE(List.of("msg", "message"), (player, value) -> player.sendMessage(Util.parse(value))),
+    MESSAGE(List.of("msg", "message", "minimessage"), (player, value) -> player.sendMessage(Util.parse(value))),
 
-    MINIMESSAGE(List.of("minimessage"), (player, value) -> player.sendMessage(Util.parse(value))),
+    BROADCAST(List.of("broadcast", "minibroadcast"), (player, value) -> Bukkit.getServer().sendMessage(Util.parse(value))),
 
-    BROADCAST(List.of("broadcast"), (player, value) -> Bukkit.getServer().sendMessage(Util.parse(value))),
-
-    MINIBROADCAST(List.of("minibroadcast"), (player, value) -> Bukkit.getServer().sendMessage(Util.parse(value))),
-
-    CHAT(List.of("chat"), Player::chat),
+    CHAT(List.of("chat"), (player, value) -> {
+        player.getScheduler().run(AuMenus.getInstance(), task -> player.chat(value), null);
+    }),
 
     JSON(List.of("json"), (player, value) -> {
         player.sendMessage(GsonComponentSerializer.gson().deserialize(value));
@@ -53,14 +52,14 @@ public enum ActionType {
     }),
 
     TAKE_MONEY(List.of("take_money", "takemoney"), (player, value) -> {
-        if (!AuMenus.getInstance().getHookProvider().isVaultEnabled()) return;
+        if (!requireVault("take_money")) return;
         double amount = Double.parseDouble(value);
         if (amount <= 0 || Double.isNaN(amount) || Double.isInfinite(amount)) return;
         AuMenus.getInstance().getHookProvider().vault().takeMoney(player, amount);
     }),
 
     GIVE_MONEY(List.of("give_money", "givemoney"), (player, value) -> {
-        if (!AuMenus.getInstance().getHookProvider().isVaultEnabled()) return;
+        if (!requireVault("give_money")) return;
         double amount = Double.parseDouble(value);
         if (amount <= 0 || Double.isNaN(amount) || Double.isInfinite(amount)) return;
         AuMenus.getInstance().getHookProvider().vault().giveMoney(player, amount);
@@ -71,12 +70,12 @@ public enum ActionType {
     GIVE_EXP(List.of("give_exp", "giveexp"), (player, value) -> modifyExp(player, value, true)),
 
     GIVE_PERMISSION(List.of("give_perm", "givepermission"), (player, value) -> {
-        if (!AuMenus.getInstance().getHookProvider().isVaultEnabled()) return;
+        if (!requireVault("give_perm")) return;
         AuMenus.getInstance().getHookProvider().vault().givePermission(player, value);
     }),
 
     TAKE_PERMISSION(List.of("take_perm", "takepermission"), (player, value) -> {
-        if (!AuMenus.getInstance().getHookProvider().isVaultEnabled()) return;
+        if (!requireVault("take_perm")) return;
         AuMenus.getInstance().getHookProvider().vault().takePermission(player, value);
     }),
 
@@ -111,6 +110,37 @@ public enum ActionType {
     PLACEHOLDER(List.of("placeholder"), (player, value) -> {
         if (!AuMenus.getInstance().getHookProvider().isPapiEnabled()) return;
         AuMenus.getInstance().getHookProvider().papi().setPlaceholders(player, value);
+    }),
+
+    LOG(List.of("log"), (player, value) -> {
+        AuMenus.getInstance().getLogger().info(value);
+    }),
+
+    RAW_SOUND(List.of("rawsound"), (player, value) -> {
+        String[] parts = value.split("\\s+");
+        float volume = parts.length > 1 ? Float.parseFloat(parts[1]) : 1.0f;
+        float pitch = parts.length > 2 ? Float.parseFloat(parts[2]) : 1.0f;
+        player.playSound(player.getLocation(), parts[0], volume, pitch);
+    }),
+
+    BROADCAST_RAW_SOUND(List.of("broadcastrawsound"), (player, value) -> {
+        String[] parts = value.split("\\s+");
+        float volume = parts.length > 1 ? Float.parseFloat(parts[1]) : 1.0f;
+        float pitch = parts.length > 2 ? Float.parseFloat(parts[2]) : 1.0f;
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            online.getScheduler().run(AuMenus.getInstance(), task ->
+                    online.playSound(online.getLocation(), parts[0], volume, pitch), null);
+        }
+    }),
+
+    BROADCAST_RAW_SOUND_WORLD(List.of("broadcastrawsoundworld"), (player, value) -> {
+        String[] parts = value.split("\\s+");
+        float volume = parts.length > 1 ? Float.parseFloat(parts[1]) : 1.0f;
+        float pitch = parts.length > 2 ? Float.parseFloat(parts[2]) : 1.0f;
+        for (Player online : player.getWorld().getPlayers()) {
+            online.getScheduler().run(AuMenus.getInstance(), task ->
+                    online.playSound(online.getLocation(), parts[0], volume, pitch), null);
+        }
     });
 
     private final List<String> aliases;
@@ -136,9 +166,12 @@ public enum ActionType {
         boolean levels = value.toUpperCase().endsWith("L");
         String numStr = levels ? value.substring(0, value.length() - 1).trim() : value.trim();
         int amount = Integer.parseInt(numStr);
+        if (amount <= 0) {
+            return;
+        }
 
         if (give && levels) {
-            player.setLevel(player.getLevel() + amount);
+            player.setLevel(Math.min(player.getLevel() + amount, 21863));
             return;
         }
         if (give) {
@@ -149,6 +182,14 @@ public enum ActionType {
             player.setLevel(Math.max(0, player.getLevel() - amount));
             return;
         }
-        player.setTotalExperience(Math.max(0, player.getTotalExperience() - amount));
+        player.giveExp(-Math.min(amount, player.getTotalExperience()));
+    }
+
+    private static boolean requireVault(@NotNull String action) {
+        if (AuMenus.getInstance().getHookProvider().isVaultEnabled()) {
+            return true;
+        }
+        AuMenus.getInstance().getLogger().warning("Action '" + action + "' requires Vault but Vault is not installed.");
+        return false;
     }
 }

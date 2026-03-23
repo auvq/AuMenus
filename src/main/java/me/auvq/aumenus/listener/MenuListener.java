@@ -18,6 +18,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,7 @@ public final class MenuListener implements Listener {
     private final RequirementRegistry requirementRegistry;
     private final long cooldownMs;
 
-    private record DenyContext(String needed, String has, String remaining, String input, String output) {}
+    private record DenyContext(String needed, String current, String remaining, String input, String output) {}
 
     public MenuListener(@NotNull AuMenus plugin,
                         @NotNull ActionRegistry actionRegistry,
@@ -55,7 +56,9 @@ public final class MenuListener implements Listener {
         }
 
         long now = System.currentTimeMillis();
-        if (now - holder.getLastClickTime() < this.cooldownMs) {
+        long effectiveCooldown = holder.getMenu().getClickCooldown() >= 0
+                ? holder.getMenu().getClickCooldown() * 50L : this.cooldownMs;
+        if (now - holder.getLastClickTime() < effectiveCooldown) {
             return;
         }
         holder.setLastClickTime(now);
@@ -78,7 +81,7 @@ public final class MenuListener implements Listener {
                     .resolveRequirementPlaceholders(requirements, player, holder);
             RequirementList.EvaluationResult result = resolved.evaluateDetailed(player, requirementRegistry);
             if (!result.passed()) {
-                handleDenyActions(player, requirements, result.failed());
+                handleDenyActions(player, resolved, result.failed());
                 return;
             }
         }
@@ -105,7 +108,10 @@ public final class MenuListener implements Listener {
         }
 
         holder.stopUpdateTask();
-        plugin.getMenuRegistry().trackClose(player.getUniqueId());
+        MenuHolder current = plugin.getMenuRegistry().getOpenMenu(player.getUniqueId()).orElse(null);
+        if (current == holder) {
+            plugin.getMenuRegistry().trackClose(player.getUniqueId());
+        }
 
         if (holder.isReloading()) {
             return;
@@ -175,27 +181,45 @@ public final class MenuListener implements Listener {
         String configInput = config.containsKey("input") ? config.get("input").toString() : "";
         String configOutput = config.containsKey("output") ? config.get("output").toString() : "";
 
-        return switch (type) {
-            case "has_money", "has money" -> {
-                double amount = config.containsKey("amount") ? ((Number) config.get("amount")).doubleValue() : 0;
-                double balance = plugin.getHookProvider().isVaultEnabled()
-                        ? plugin.getHookProvider().vault().getBalance(player) : 0;
-                yield new DenyContext(formatMoney(amount), formatMoney(balance),
-                        formatMoney(Math.max(0, amount - balance)), configInput, configOutput);
+        try {
+            return switch (type) {
+                case "has_money", "has money" -> {
+                    double amount = parseNumber(config.get("amount"), 0).doubleValue();
+                    double balance = plugin.getHookProvider().isVaultEnabled()
+                            ? plugin.getHookProvider().vault().getBalance(player) : 0;
+                    yield new DenyContext(formatMoney(amount), formatMoney(balance),
+                            formatMoney(Math.max(0, amount - balance)), configInput, configOutput);
+                }
+                case "has_exp", "has exp" -> {
+                    int amount = parseNumber(config.get("amount"), 0).intValue();
+                    boolean levels = Boolean.TRUE.equals(config.get("level"));
+                    int current = levels ? player.getLevel() : player.getTotalExperience();
+                    yield new DenyContext(String.valueOf(amount), String.valueOf(current),
+                            String.valueOf(Math.max(0, amount - current)), configInput, configOutput);
+                }
+                case "has_item", "has item" -> {
+                    int amount = parseNumber(config.get("amount"), 1).intValue();
+                    yield new DenyContext(String.valueOf(amount), "", String.valueOf(amount), configInput, configOutput);
+                }
+                default -> new DenyContext("", "", "", configInput, configOutput);
+            };
+        } catch (RuntimeException e) {
+            return new DenyContext("", "", "", configInput, configOutput);
+        }
+    }
+
+    private static @NotNull Number parseNumber(@Nullable Object value, double fallback) {
+        if (value instanceof Number num) {
+            return num;
+        }
+        if (value instanceof String str) {
+            try {
+                return Double.parseDouble(str);
+            } catch (NumberFormatException e) {
+                return fallback;
             }
-            case "has_exp", "has exp" -> {
-                int amount = config.containsKey("amount") ? ((Number) config.get("amount")).intValue() : 0;
-                boolean levels = Boolean.TRUE.equals(config.get("level"));
-                int current = levels ? player.getLevel() : player.getTotalExperience();
-                yield new DenyContext(String.valueOf(amount), String.valueOf(current),
-                        String.valueOf(Math.max(0, amount - current)), configInput, configOutput);
-            }
-            case "has_item", "has item" -> {
-                int amount = config.containsKey("amount") ? ((Number) config.get("amount")).intValue() : 1;
-                yield new DenyContext(String.valueOf(amount), "", String.valueOf(amount), configInput, configOutput);
-            }
-            default -> new DenyContext("", "", "", configInput, configOutput);
-        };
+        }
+        return fallback;
     }
 
     private @NotNull List<Action> applyDenyReplacements(@NotNull List<Action> actions, @NotNull DenyContext context) {
@@ -204,7 +228,7 @@ public final class MenuListener implements Listener {
                         action.getType(),
                         action.getValue()
                                 .replace("{needed}", context.needed())
-                                .replace("{has}", context.has())
+                                .replace("{has}", context.current())
                                 .replace("{remaining}", context.remaining())
                                 .replace("{input}", context.input())
                                 .replace("{output}", context.output()),

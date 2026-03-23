@@ -6,11 +6,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public final class VaultHook {
 
-    private Economy economy;
-    private Permission permission;
+    private @Nullable Economy economy;
+    private @Nullable Permission permission;
 
     boolean setup() {
         RegisteredServiceProvider<Economy> ecoProvider =
@@ -26,14 +27,6 @@ public final class VaultHook {
         }
 
         return economy != null;
-    }
-
-    public boolean hasEconomy() {
-        return economy != null;
-    }
-
-    public boolean hasPermissions() {
-        return permission != null;
     }
 
     public double getBalance(@NotNull Player player) {

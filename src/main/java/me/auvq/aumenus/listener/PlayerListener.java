@@ -2,17 +2,20 @@ package me.auvq.aumenus.listener;
 
 import me.auvq.aumenus.AuMenus;
 import me.auvq.aumenus.menu.Menu;
+import me.auvq.aumenus.menu.MenuHolder;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 public final class PlayerListener implements Listener {
 
@@ -22,7 +25,7 @@ public final class PlayerListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onCommand(@NotNull PlayerCommandPreprocessEvent event) {
         String message = event.getMessage().substring(1);
         String[] parts = message.split("\\s+");
@@ -47,5 +50,19 @@ public final class PlayerListener implements Listener {
         }
 
         plugin.openMenu(player, menu, args);
+    }
+
+    @EventHandler
+    public void onQuit(@NotNull PlayerQuitEvent event) {
+        UUID playerId = event.getPlayer().getUniqueId();
+        plugin.getLastOpenedMenus().remove(playerId);
+
+        MenuHolder holder = plugin.getMenuRegistry().getOpenMenu(playerId).orElse(null);
+        if (holder == null) {
+            return;
+        }
+
+        holder.stopUpdateTask();
+        plugin.getMenuRegistry().trackClose(playerId);
     }
 }
