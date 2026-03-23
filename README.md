@@ -8,7 +8,7 @@
 [![Build](https://img.shields.io/github/actions/workflow/status/auvq/AuMenus/build.yml?branch=main&label=build)](https://github.com/auvq/AuMenus/actions)
 [![Servers](https://img.shields.io/bstats/servers/30368?label=servers&color=brightgreen)](https://bstats.org/plugin/bukkit/AuMenus/30368)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Wiki](https://img.shields.io/badge/docs-GitBook-blue?logo=gitbook)](https://auvq.gitbook.io/austudios)
+[![Wiki](https://img.shields.io/badge/docs-Wiki-blue?logo=github)](https://github.com/auvq/AuMenus/wiki)
 
 </div>
 
