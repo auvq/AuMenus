@@ -94,11 +94,11 @@ Use the `meta` action type in menu configs:
 - meta: remove coins
 ```
 
-- `set` -- Assign a value
-- `add` -- Add to a numeric value (starts at 0 if unset)
-- `subtract` -- Subtract from a numeric value
-- `switch` -- Toggle a boolean (defaults to switching from `false` to `true`)
-- `remove` -- Delete the key. Only needs the key name.
+- `set` -Assign a value
+- `add` -Add to a numeric value (starts at 0 if unset)
+- `subtract` -Subtract from a numeric value
+- `switch` -Toggle a boolean (defaults to switching from `false` to `true`)
+- `remove` -Delete the key. Only needs the key name.
 
 ### Meta Commands
 

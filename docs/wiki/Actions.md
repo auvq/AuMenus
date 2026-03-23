@@ -27,7 +27,7 @@ on_click:
 | Key      | Description |
 |----------|-------------|
 | `delay`  | Ticks before execution. 20 ticks = 1 second. |
-| `chance` | Percentage (0-100) that the action fires. Consecutive `chance` actions form a group -- only one fires per group. A non-chance action resets the group. |
+| `chance` | Percentage (0-100) that the action fires. Consecutive `chance` actions form a group -only one fires per group. A non-chance action resets the group. |
 
 ## Action Types
 

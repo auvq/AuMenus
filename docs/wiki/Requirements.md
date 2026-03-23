@@ -2,10 +2,10 @@
 
 Requirements are conditions checked before actions execute. Used in:
 
-- `open_require` -- Before menu opens
-- `click_require` -- Before click actions
-- `left_click_require`, `right_click_require`, etc. -- Per-click-type
-- `view_require` -- Whether an item is displayed
+- `open_require` -Before menu opens
+- `click_require` -Before click actions
+- `left_click_require`, `right_click_require`, etc. -Per-click-type
+- `view_require` -Whether an item is displayed
 
 ## Shorthand Syntax
 
@@ -72,9 +72,26 @@ click_require:
 | `checks`          | Map of named requirement checks |
 | `minimum`         | Minimum checks that must pass (default: all non-optional) |
 | `stop_at_success` | Stop evaluating once minimum is met |
-| `deny`            | Overall deny actions if the list fails |
+| `deny`            | Actions to run if the list fails |
+| `success`         | Actions to run if the list passes |
 
-Per-check options: `type`, `optional` (does not count toward total), `deny`, `success`.
+Per-check options: `type`, `optional` (does not count toward total), `deny` (runs if that check fails), `success` (runs if that check passes).
+
+```yaml
+click_require:
+  checks:
+    vip_check:
+      type: has_permission
+      permission: group.vip
+      deny:
+        - msg: "&cVIP only!"
+      success:
+        - msg: "&aWelcome, VIP!"
+  deny:
+    - sound: entity.villager.no
+  success:
+    - sound: entity.experience_orb.pickup
+```
 
 ## Requirement Types
 
@@ -94,10 +111,83 @@ Per-check options: `type`, `optional` (does not count toward total), `deny`, `su
 | `==`, `!=`, `>`, `<`, `>=`, `<=` | | `input`, `output` (numeric if parseable, else string) |
 | `is_near` | `is near` | `location` (`world,x,y,z`), `distance` |
 | `is_object` | `is object` | `input`, `object` (`INT`, `DOUBLE`, `UUID`, `PLAYER`) |
+| `javascript` | `expression` | `expression` (see Expression Requirements below) |
 
 ### has_item slot values
 
 `main_hand`, `off_hand`, `armor_helmet`, `armor_chestplate`, `armor_leggings`, `armor_boots`. Omit to check full inventory.
+
+## Expression Requirements
+
+The `javascript` (or `expression`) type lets you write multiple conditions in a single check. Placeholders are resolved before evaluation. This is useful when you need a complex condition to count as one check for `minimum` counting.
+
+```yaml
+type: javascript
+expression: '"%some_placeholder%" == "yes" && %player_level% >= 5 && %balance% > 0'
+```
+
+### Supported operators
+
+`==`, `!=`, `>`, `<`, `>=`, `<=`, `===`, `!==`
+
+### Logic
+
+- `&&` - all conditions must pass (AND)
+- `||` - any group can pass (OR)
+- `(parentheses)` - grouping for complex logic
+- `!` prefix - negation
+
+### String methods
+
+```yaml
+expression: '"%player_name%".contains("Steve")'
+expression: '"%player_name%".startsWith("A")'
+expression: '"%player_name%".endsWith("_alt")'
+expression: '"%player_name%".equalsIgnoreCase("notch")'
+expression: '"%player_name%".length() >= 3'
+expression: '"%some_value%".isEmpty()'
+```
+
+### Values
+
+- Quoted strings: `"value"` or `'value'`
+- Numbers: `123`, `45.6`
+- Booleans: `true`, `false`
+- PAPI placeholders: resolved before the expression runs
+
+### Examples
+
+Simple AND chain:
+
+```yaml
+type: javascript
+expression: '%has_permission_vip% == true && %player_level% >= 10'
+```
+
+OR groups:
+
+```yaml
+type: javascript
+expression: '%player_world% == "world" || %player_world% == "world_nether"'
+```
+
+Grouped logic:
+
+```yaml
+type: javascript
+expression: '(%credits% >= 100 && %level% > 5) || %rank% == "admin"'
+```
+
+Negation:
+
+```yaml
+type: javascript
+expression: '!(%player_is_banned% == true) && %player_level% > 0'
+```
+
+### Migrating from DeluxeMenus
+
+DeluxeMenus uses a Nashorn JavaScript engine for expressions. AuMenus does not run real JavaScript, but it supports the same comparison and logic patterns that DM users typically write. Simple `&&` / `||` chains with `==`, `!=`, `>`, `<` comparisons work the same way.
 
 ## Inverted Requirements
 

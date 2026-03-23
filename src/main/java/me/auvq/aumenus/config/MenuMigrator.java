@@ -163,7 +163,9 @@ public final class MenuMigrator {
             }
         }
 
-        out.set("register_command", dm.getBoolean("register_command", true));
+        if (out.contains("command") && !dm.getBoolean("register_command", true)) {
+            out.set("register_command", false);
+        }
         out.set("size", dm.getInt("size", 54));
 
         String type = dm.getString("inventory_type");
@@ -396,6 +398,11 @@ public final class MenuMigrator {
             }
 
             String type = req.getString("type", "");
+            String normalized = type.toLowerCase().replace(" ", "_");
+            if (normalized.startsWith("!")) {
+                normalized = normalized.substring(1);
+            }
+
             String checkPath = outKey + ".checks." + reqName;
 
             out.set(checkPath + ".type", convertRequirementType(type));
@@ -435,6 +442,12 @@ public final class MenuMigrator {
             case "has_meta" -> convertHasMetaFields(req, out, checkPath);
             case "is_near" -> convertIsNearFields(req, out, checkPath);
             case "string_length" -> convertStringLengthFields(req, out, checkPath);
+            case "javascript" -> {
+                String expression = req.getString("expression");
+                if (expression != null) {
+                    out.set(checkPath + ".expression", expression);
+                }
+            }
             default -> convertComparatorFields(type, req, out, checkPath);
         }
     }
@@ -469,6 +482,82 @@ public final class MenuMigrator {
                                      @NotNull YamlConfiguration out, @NotNull String checkPath) {
         out.set(checkPath + ".input", req.getString("input"));
         out.set(checkPath + ".regex", req.getString("regex"));
+    }
+
+    private void convertJavaScriptRequirement(@NotNull ConfigurationSection req,
+                                               @NotNull String reqName,
+                                               @NotNull String outKey,
+                                               @NotNull YamlConfiguration out) {
+        String expression = req.getString("expression", "");
+        boolean optional = req.getBoolean("optional", false);
+        List<Object> denyActions = new ArrayList<>();
+        List<String> rawDeny = req.getStringList("deny_commands");
+        for (String dmAction : rawDeny) {
+            denyActions.add(convertAction(dmAction));
+        }
+
+        String[] conditions = expression.split("\\s*&&\\s*");
+        int index = 0;
+        for (String condition : conditions) {
+            condition = condition.trim();
+            String checkName = reqName + "_" + index;
+            String checkPath = outKey + ".checks." + checkName;
+
+            JsCondition parsed = parseJsCondition(condition);
+            if (parsed == null) {
+                out.set(checkPath + ".type", "javascript");
+                out.set(checkPath + ".expression", condition);
+            } else {
+                out.set(checkPath + ".type", parsed.type());
+                out.set(checkPath + ".input", parsed.input());
+                out.set(checkPath + ".output", parsed.output());
+            }
+
+            if (optional) {
+                out.set(checkPath + ".optional", true);
+            }
+            if (!denyActions.isEmpty()) {
+                out.set(checkPath + ".deny", denyActions);
+            }
+            index++;
+        }
+    }
+
+    private record JsCondition(String type, String input, String output) {}
+
+    private @Nullable JsCondition parseJsCondition(@NotNull String condition) {
+        String[] operators = {"!=", "==", ">=", "<=", ">", "<"};
+        for (String op : operators) {
+            int idx = condition.indexOf(op);
+            if (idx == -1) {
+                continue;
+            }
+            String left = cleanJsValue(condition.substring(0, idx).trim());
+            String right = cleanJsValue(condition.substring(idx + op.length()).trim());
+
+            String type = switch (op) {
+                case "==" -> isStringComparison(left, right) ? "string_equals" : "==";
+                case "!=" -> isStringComparison(left, right) ? "!string_equals" : "!=";
+                default -> op;
+            };
+
+            return new JsCondition(type, left, right);
+        }
+        return null;
+    }
+
+    private static @NotNull String cleanJsValue(@NotNull String value) {
+        if ((value.startsWith("\"") && value.endsWith("\""))
+                || (value.startsWith("'") && value.endsWith("'"))) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
+    }
+
+    private static boolean isStringComparison(@NotNull String left, @NotNull String right) {
+        boolean leftIsString = left.startsWith("%") || left.contains("_");
+        boolean rightIsString = !right.matches("-?\\d+(\\.\\d+)?");
+        return leftIsString || rightIsString;
     }
 
     private void convertHasMetaFields(@NotNull ConfigurationSection req,
@@ -514,10 +603,11 @@ public final class MenuMigrator {
 
     private void replaceDmPlaceholders(@NotNull YamlConfiguration config) {
         String yaml = config.saveToString();
-        if (!yaml.contains("%deluxemenus_")) {
+        if (!yaml.contains("deluxemenus_")) {
             return;
         }
         yaml = yaml.replace("%deluxemenus_meta_", "%aumenus_meta_");
+        yaml = yaml.replace("{deluxemenus_meta_", "{aumenus_meta_");
         YamlConfiguration replaced = new YamlConfiguration();
         try {
             replaced.loadFromString(yaml);

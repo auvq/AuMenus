@@ -22,7 +22,7 @@ Edit an existing menu:
 2. Move items between slots by clicking and dragging, or place items from your inventory.
 3. Closing the editor saves changes to the YAML file and reloads the menu.
 
-Existing items (loaded from config) keep all their configuration -- only slot positions update. New items placed from your inventory are saved with basic properties only (material, name, lore, amount, slot). Cleared slots are removed from config.
+Existing items (loaded from config) keep all their configuration -only slot positions update. New items placed from your inventory are saved with basic properties only (material, name, lore, amount, slot). Cleared slots are removed from config.
 
 ## Limitations
 

@@ -185,7 +185,7 @@ public final class ActionRegistry {
         if (titleHasPagePlaceholder) {
             holder.stopUpdateTask();
             holder.setReloading(true);
-            MenuHolder newHolder = new MenuHolder(menu, player, holder.getArguments(), newPage);
+            MenuHolder newHolder = new MenuHolder(menu, player, holder.getTarget(), holder.getArguments(), newPage);
             plugin.getMenuRenderer().render(newHolder);
             plugin.getMenuRegistry().trackOpen(player.getUniqueId(), newHolder);
             player.openInventory(newHolder.getInventory());

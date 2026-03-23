@@ -29,11 +29,25 @@ Main command: `/aumenus` (alias: `/am`)
 
 Meta types: `STRING`, `INTEGER`, `LONG`, `DOUBLE`, `BOOLEAN`.
 
+## Target Player (`-p:`)
+
+Any menu command supports `-p:playername` to resolve placeholders against a different player. The menu opens for the sender, but all PAPI placeholders and `{target}` resolve for the target player.
+
+```
+/stats -p:Notch
+/am open stats -p:Steve
+```
+
+This is useful for admin menus that show another player's data (balance, stats, etc). The `-p:` flag can appear anywhere in the arguments.
+
+In the menu title and items, use `{target}` to show the target player's name, or any PAPI placeholder to show their data.
+
 ## Examples
 
 ```
 /am open shop
 /am open shop Steve
+/stats -p:Notch
 /am execute Steve msg &aHello!
 /am execute Steve sound entity.experience_orb.pickup
 /am meta Steve set coins INTEGER 100

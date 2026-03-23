@@ -23,6 +23,7 @@ public final class MenuHolder implements InventoryHolder {
 
     private final @NotNull Menu menu;
     private final @NotNull UUID playerId;
+    private final @Nullable UUID targetId;
     private final @NotNull Inventory inventory;
     private final @NotNull Map<String, String> arguments;
     private final @NotNull Map<Integer, MenuItem> activeItems;
@@ -39,13 +40,19 @@ public final class MenuHolder implements InventoryHolder {
     private @Nullable ScheduledTask updateTask;
 
     public MenuHolder(@NotNull Menu menu, @NotNull Player player, @NotNull Map<String, String> arguments) {
-        this(menu, player, arguments, 1);
+        this(menu, player, null, arguments, 1);
     }
 
-    public MenuHolder(@NotNull Menu menu, @NotNull Player player, @NotNull Map<String, String> arguments,
-                       int initialPage) {
+    public MenuHolder(@NotNull Menu menu, @NotNull Player player, @Nullable Player target,
+                       @NotNull Map<String, String> arguments) {
+        this(menu, player, target, arguments, 1);
+    }
+
+    public MenuHolder(@NotNull Menu menu, @NotNull Player player, @Nullable Player target,
+                       @NotNull Map<String, String> arguments, int initialPage) {
         this.menu = menu;
         this.playerId = player.getUniqueId();
+        this.targetId = target != null ? target.getUniqueId() : null;
         this.arguments = arguments;
         this.activeItems = new ConcurrentHashMap<>();
         this.currentPage = initialPage;
@@ -67,6 +74,22 @@ public final class MenuHolder implements InventoryHolder {
 
     public @Nullable Player getPlayer() {
         return Bukkit.getPlayer(playerId);
+    }
+
+    public @Nullable Player getTarget() {
+        return targetId != null ? Bukkit.getPlayer(targetId) : null;
+    }
+
+    public @NotNull Player getPlaceholderPlayer() {
+        Player target = getTarget();
+        if (target != null && target.isOnline()) {
+            return target;
+        }
+        Player player = getPlayer();
+        if (player != null) {
+            return player;
+        }
+        throw new IllegalStateException("No valid player for placeholder resolution");
     }
 
     public @Nullable MenuItem getActiveItem(int slot) {
@@ -127,8 +150,12 @@ public final class MenuHolder implements InventoryHolder {
         title = title.replace("{max_page}", String.valueOf(getMaxPage()));
         title = title.replace("{player}", player.getName());
 
+        Player papiTarget = targetId != null ? Bukkit.getPlayer(targetId) : null;
+        Player placeholderPlayer = papiTarget != null && papiTarget.isOnline() ? papiTarget : player;
+        title = title.replace("{target}", placeholderPlayer.getName());
+
         if (AuMenus.getInstance().getHookProvider().isPapiEnabled()) {
-            title = AuMenus.getInstance().getHookProvider().papi().setPlaceholders(player, title);
+            title = AuMenus.getInstance().getHookProvider().papi().setPlaceholders(placeholderPlayer, title);
         }
 
         return title;

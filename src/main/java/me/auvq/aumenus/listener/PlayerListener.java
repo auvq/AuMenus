@@ -3,7 +3,9 @@ package me.auvq.aumenus.listener;
 import me.auvq.aumenus.AuMenus;
 import me.auvq.aumenus.menu.Menu;
 import me.auvq.aumenus.menu.MenuHolder;
+import me.auvq.aumenus.util.Util;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -43,13 +45,27 @@ public final class PlayerListener implements Listener {
         Menu menu = menuOpt.get();
         Player player = event.getPlayer();
 
+        Player target = null;
         Map<String, String> args = new HashMap<>();
-        for (int i = 0; i < Math.min(menu.getArgs().size(), parts.length - 1); i++) {
-            String sanitized = MiniMessage.miniMessage().escapeTags(parts[i + 1]);
-            args.put(menu.getArgs().get(i), sanitized);
+        int argIndex = 0;
+        for (int i = 1; i < parts.length; i++) {
+            if (parts[i].toLowerCase().startsWith("-p:")) {
+                String targetName = parts[i].substring(3);
+                target = Bukkit.getPlayer(targetName);
+                if (target == null || !target.isOnline()) {
+                    player.sendMessage(Util.parse("&cPlayer '" + targetName + "' not found."));
+                    return;
+                }
+                continue;
+            }
+            if (argIndex < menu.getArgs().size()) {
+                String sanitized = MiniMessage.miniMessage().escapeTags(parts[i]);
+                args.put(menu.getArgs().get(argIndex), sanitized);
+                argIndex++;
+            }
         }
 
-        plugin.openMenu(player, menu, args);
+        plugin.openMenu(player, target, menu, args);
     }
 
     @EventHandler

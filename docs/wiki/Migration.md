@@ -145,11 +145,6 @@ AuMenus automatically converts underscores to dots in sound names if no dots are
 
 `on_click` is a fallback. If a specific click type (e.g., `on_left_click`) has actions defined, `on_click` does NOT also execute. Same for click requirements.
 
-### Features Not in AuMenus
-
-- NMS-based NBT tag data on items
-- JavaScript requirement evaluation (Nashorn/GraalVM)
-
 ### AuMenus Exclusive Features
 
 - Pagination (`page_slots`, `page_items`, `prev_page`/`next_page`)

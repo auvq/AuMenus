@@ -84,6 +84,7 @@ public final class MenuListener implements Listener {
                 handleDenyActions(player, resolved, result.failed());
                 return;
             }
+            handleSuccessActions(player, resolved, result.passed_list());
         }
 
         if (!actions.isEmpty()) {
@@ -147,6 +148,19 @@ public final class MenuListener implements Listener {
             default -> null;
         };
         return specific != null ? specific : item.getClickRequire();
+    }
+
+    private void handleSuccessActions(@NotNull Player player,
+                                       @NotNull RequirementList requirements,
+                                       @NotNull List<Requirement> passed) {
+        for (Requirement req : passed) {
+            if (!req.getSuccessActions().isEmpty()) {
+                actionRegistry.executeActions(player, req.getSuccessActions());
+            }
+        }
+        if (!requirements.getSuccessActions().isEmpty()) {
+            actionRegistry.executeActions(player, requirements.getSuccessActions());
+        }
     }
 
     private void handleDenyActions(@NotNull Player player,

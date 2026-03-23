@@ -226,6 +226,14 @@ public enum RequirementType {
             case "PLAYER" -> Bukkit.getPlayerExact(input) != null;
             default -> false;
         };
+    }),
+
+    JAVASCRIPT(List.of("javascript", "expression"), (player, config) -> {
+        String expression = (String) config.get("expression");
+        if (expression == null) {
+            return false;
+        }
+        return evaluateExpression(expression);
     });
 
     private final List<String> aliases;
@@ -234,6 +242,188 @@ public enum RequirementType {
     RequirementType(@NotNull List<String> aliases, @NotNull RequirementEvaluator evaluator) {
         this.aliases = aliases;
         this.evaluator = evaluator;
+    }
+
+    private static boolean evaluateExpression(@NotNull String expression) {
+        for (String orGroup : splitOutsideParens(expression, "||")) {
+            if (evaluateAndGroup(orGroup.trim())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean evaluateAndGroup(@NotNull String group) {
+        for (String condition : splitOutsideParens(group, "&&")) {
+            if (!evaluateSingle(condition.trim())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean evaluateSingle(@NotNull String condition) {
+        if (condition.startsWith("(") && condition.endsWith(")")) {
+            return evaluateExpression(condition.substring(1, condition.length() - 1));
+        }
+
+        if (condition.startsWith("!")) {
+            return !evaluateSingle(condition.substring(1).trim());
+        }
+
+        String[] operators = {"!==", "===", "!=", "==", ">=", "<=", ">", "<"};
+        for (String op : operators) {
+            int idx = findOperator(condition, op);
+            if (idx == -1) {
+                continue;
+            }
+            String left = resolveValue(condition.substring(0, idx).trim());
+            String right = resolveValue(condition.substring(idx + op.length()).trim());
+            return evaluateComparison(left, right, op);
+        }
+
+        String resolved = resolveValue(condition);
+        return resolved.equalsIgnoreCase("true") || resolved.equals("1");
+    }
+
+    private static boolean evaluateComparison(@NotNull String left, @NotNull String right, @NotNull String op) {
+        int cmp = compareStringsOrNumbers(left, right);
+        return switch (op) {
+            case "==", "===" -> cmp == 0;
+            case "!=", "!==" -> cmp != 0;
+            case ">" -> cmp > 0;
+            case "<" -> cmp < 0;
+            case ">=" -> cmp >= 0;
+            case "<=" -> cmp <= 0;
+            default -> false;
+        };
+    }
+
+    private static @NotNull String resolveValue(@NotNull String value) {
+        String stripped = stripQuotes(value);
+        if (stripped.endsWith(".length()") || stripped.endsWith(".length")) {
+            String inner = stripped.substring(0, stripped.lastIndexOf(".length"));
+            inner = stripQuotes(inner);
+            return String.valueOf(inner.length());
+        }
+        if (stripped.endsWith(".isEmpty()")) {
+            String inner = stripped.substring(0, stripped.lastIndexOf(".isEmpty()"));
+            inner = stripQuotes(inner);
+            return String.valueOf(inner.isEmpty());
+        }
+        if (stripped.contains(".contains(")) {
+            int dotIdx = stripped.indexOf(".contains(");
+            String haystack = stripQuotes(stripped.substring(0, dotIdx));
+            String needle = stripQuotes(stripped.substring(dotIdx + 10, stripped.length() - 1));
+            return String.valueOf(haystack.contains(needle));
+        }
+        if (stripped.contains(".startsWith(")) {
+            int dotIdx = stripped.indexOf(".startsWith(");
+            String str = stripQuotes(stripped.substring(0, dotIdx));
+            String prefix = stripQuotes(stripped.substring(dotIdx + 12, stripped.length() - 1));
+            return String.valueOf(str.startsWith(prefix));
+        }
+        if (stripped.contains(".endsWith(")) {
+            int dotIdx = stripped.indexOf(".endsWith(");
+            String str = stripQuotes(stripped.substring(0, dotIdx));
+            String suffix = stripQuotes(stripped.substring(dotIdx + 10, stripped.length() - 1));
+            return String.valueOf(str.endsWith(suffix));
+        }
+        if (stripped.contains(".equalsIgnoreCase(")) {
+            int dotIdx = stripped.indexOf(".equalsIgnoreCase(");
+            String str = stripQuotes(stripped.substring(0, dotIdx));
+            String other = stripQuotes(stripped.substring(dotIdx + 18, stripped.length() - 1));
+            return String.valueOf(str.equalsIgnoreCase(other));
+        }
+        return stripped;
+    }
+
+    private static int findOperator(@NotNull String condition, @NotNull String op) {
+        int depth = 0;
+        boolean inQuote = false;
+        char quoteChar = 0;
+        for (int i = 0; i < condition.length() - op.length() + 1; i++) {
+            char c = condition.charAt(i);
+            if (inQuote) {
+                if (c == quoteChar) {
+                    inQuote = false;
+                }
+                continue;
+            }
+            if (c == '"' || c == '\'') {
+                inQuote = true;
+                quoteChar = c;
+                continue;
+            }
+            if (c == '(') {
+                depth++;
+                continue;
+            }
+            if (c == ')') {
+                depth--;
+                continue;
+            }
+            if (depth == 0 && condition.startsWith(op, i)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static @NotNull List<String> splitOutsideParens(@NotNull String input, @NotNull String delimiter) {
+        List<String> parts = new ArrayList<>();
+        int depth = 0;
+        boolean inQuote = false;
+        char quoteChar = 0;
+        int start = 0;
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (inQuote) {
+                if (c == quoteChar) {
+                    inQuote = false;
+                }
+                continue;
+            }
+            if (c == '"' || c == '\'') {
+                inQuote = true;
+                quoteChar = c;
+                continue;
+            }
+            if (c == '(') {
+                depth++;
+                continue;
+            }
+            if (c == ')') {
+                depth--;
+                continue;
+            }
+            if (depth == 0 && input.startsWith(delimiter, i)) {
+                parts.add(input.substring(start, i));
+                start = i + delimiter.length();
+                i += delimiter.length() - 1;
+            }
+        }
+        parts.add(input.substring(start));
+        return parts;
+    }
+
+    private static @NotNull String stripQuotes(@NotNull String value) {
+        if (value.length() >= 2
+                && ((value.startsWith("\"") && value.endsWith("\""))
+                || (value.startsWith("'") && value.endsWith("'")))) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
+    }
+
+    private static int compareStringsOrNumbers(@NotNull String left, @NotNull String right) {
+        try {
+            double leftNum = Double.parseDouble(left);
+            double rightNum = Double.parseDouble(right);
+            return Double.compare(leftNum, rightNum);
+        } catch (NumberFormatException e) {
+            return left.compareTo(right);
+        }
     }
 
     private static int compareValues(@NotNull Map<String, Object> config) {

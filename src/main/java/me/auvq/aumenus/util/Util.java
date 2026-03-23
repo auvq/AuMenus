@@ -135,10 +135,14 @@ public final class Util {
         result = result.replace("{max_page}", String.valueOf(holder.getMaxPage()));
         result = result.replace("{player}", player.getName());
 
+        Player placeholderPlayer = holder.getTarget() != null && holder.getTarget().isOnline()
+                ? holder.getTarget() : player;
+        result = result.replace("{target}", placeholderPlayer.getName());
+
         if (result.contains("%")) {
-            result = resolveBuiltInPlaceholders(player, result);
+            result = resolveBuiltInPlaceholders(placeholderPlayer, result);
             if (hookProvider.isPapiEnabled()) {
-                result = hookProvider.papi().setPlaceholders(player, result);
+                result = hookProvider.papi().setPlaceholders(placeholderPlayer, result);
             }
         }
 

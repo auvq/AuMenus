@@ -7,6 +7,7 @@
 
 [![Build](https://img.shields.io/github/actions/workflow/status/auvq/AuMenus/build.yml?branch=main&label=build)](https://github.com/auvq/AuMenus/actions)
 [![Servers](https://img.shields.io/bstats/servers/30368?label=servers&color=brightgreen)](https://bstats.org/plugin/bukkit/AuMenus/30368)
+[![Discord](https://img.shields.io/discord/1485295113566421033?label=chat&logo=discord&color=5865F2)](https://discord.gg/B7ArGXP6)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Wiki](https://img.shields.io/badge/docs-Wiki-blue?logo=github)](https://github.com/auvq/AuMenus/wiki)
 
@@ -79,6 +80,7 @@ cd AuMenus
 
 ## Support
 
+- [Discord](https://discord.gg/B7ArGXP6)
 - [Issue Tracker](https://github.com/auvq/AuMenus/issues)
 
 ## Quick Links

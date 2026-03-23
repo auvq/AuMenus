@@ -111,6 +111,12 @@ public final class MetaStore {
         }
     }
 
+    public @Nullable String getAuto(@NotNull Player player, @NotNull String key) {
+        PersistentDataContainer pdc = player.getPersistentDataContainer();
+        NamespacedKey nsKey = new NamespacedKey(plugin, key);
+        return autoDetectGet(pdc, nsKey, null);
+    }
+
     private @Nullable String autoDetectGet(@NotNull PersistentDataContainer pdc,
                                             @NotNull NamespacedKey key,
                                             @Nullable String defaultValue) {

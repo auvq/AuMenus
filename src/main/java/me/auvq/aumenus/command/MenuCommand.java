@@ -33,6 +33,12 @@ public final class MenuCommand {
 
     private static final Set<String> META_OPERATIONS = Set.of("set", "remove", "add", "subtract", "switch", "get", "list");
     private static final Set<String> META_TYPES = Set.of("STRING", "INTEGER", "LONG", "DOUBLE", "BOOLEAN");
+    private static final List<String> ACTION_TYPES = List.of(
+            "player", "console", "msg", "broadcast", "sound", "close", "refresh",
+            "open", "meta", "take_money", "give_money", "take_exp", "give_exp",
+            "give_perm", "take_perm", "connect", "chat", "commandevent",
+            "json", "jsonbroadcast", "broadcast_sound", "placeholder",
+            "prev_page", "next_page", "anvil_input", "chat_input", "log");
 
     public static void register(@NotNull Commands registrar, @NotNull AuMenus plugin) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("aumenus")
@@ -83,18 +89,32 @@ public final class MenuCommand {
             return 0;
         }
 
+        Player target = null;
         Map<String, String> menuArgs = new HashMap<>();
         try {
             String argsStr = StringArgumentType.getString(context, "args");
             String[] argValues = argsStr.split("\\s+");
-            for (int i = 0; i < Math.min(menu.getArgs().size(), argValues.length); i++) {
-                String sanitized = MiniMessage.miniMessage().escapeTags(argValues[i]);
-                menuArgs.put(menu.getArgs().get(i), sanitized);
+            int argIndex = 0;
+            for (String argValue : argValues) {
+                if (argValue.toLowerCase().startsWith("-p:")) {
+                    String targetName = argValue.substring(3);
+                    target = Bukkit.getPlayer(targetName);
+                    if (target == null || !target.isOnline()) {
+                        player.sendMessage(Util.parse("&cPlayer '" + targetName + "' not found."));
+                        return 0;
+                    }
+                    continue;
+                }
+                if (argIndex < menu.getArgs().size()) {
+                    String sanitized = MiniMessage.miniMessage().escapeTags(argValue);
+                    menuArgs.put(menu.getArgs().get(argIndex), sanitized);
+                    argIndex++;
+                }
             }
         } catch (IllegalArgumentException ignored) {
         }
 
-        plugin.openMenu(player, menu, menuArgs);
+        plugin.openMenu(player, target, menu, menuArgs);
         return 1;
     }
 
@@ -211,6 +231,12 @@ public final class MenuCommand {
                             return builder.buildFuture();
                         })
                         .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("action", StringArgumentType.greedyString())
+                                .suggests((context, builder) -> {
+                                    for (String type : ACTION_TYPES) {
+                                        builder.suggest(type);
+                                    }
+                                    return builder.buildFuture();
+                                })
                                 .executes(context -> handleExecute(context, plugin))));
     }
 
@@ -384,8 +410,12 @@ public final class MenuCommand {
                 sender.sendMessage(Util.parse("&aSwitched boolean meta '" + key + "' for " + target.getName() + "."));
             }
             case "get" -> {
-                String result = plugin.getMetaStore().get(target, key, type, "&cnot set");
-                sender.sendMessage(Util.parse("&6" + target.getName() + " &7[" + key + "] &f= &e" + result));
+                String result = plugin.getMetaStore().getAuto(target, key);
+                if (result == null) {
+                    sender.sendMessage(Util.parse("&6" + target.getName() + " &7[" + key + "] &f= &cnot set"));
+                } else {
+                    sender.sendMessage(Util.parse("&6" + target.getName() + " &7[" + key + "] &f= &e" + result));
+                }
             }
             case "set", "add", "subtract" -> {
                 if (value == null) {
