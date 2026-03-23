@@ -4,6 +4,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -134,15 +135,15 @@ public final class Util {
         result = result.replace("{page}", String.valueOf(holder.getCurrentPage()));
         result = result.replace("{max_page}", String.valueOf(holder.getMaxPage()));
         result = result.replace("{player}", player.getName());
+        result = result.replace("{target}", holder.getTargetName());
 
-        Player placeholderPlayer = holder.getTarget() != null && holder.getTarget().isOnline()
-                ? holder.getTarget() : player;
-        result = result.replace("{target}", placeholderPlayer.getName());
-
+        OfflinePlayer papiTarget = holder.getPlaceholderTarget();
         if (result.contains("%")) {
-            result = resolveBuiltInPlaceholders(placeholderPlayer, result);
+            if (papiTarget instanceof Player onlineTarget) {
+                result = resolveBuiltInPlaceholders(onlineTarget, result);
+            }
             if (hookProvider.isPapiEnabled()) {
-                result = hookProvider.papi().setPlaceholders(placeholderPlayer, result);
+                result = hookProvider.papi().setPlaceholders(papiTarget, result);
             }
         }
 

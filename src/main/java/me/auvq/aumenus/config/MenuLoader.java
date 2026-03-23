@@ -103,6 +103,10 @@ public final class MenuLoader {
             int updateInterval = config.getInt("update_interval",
                     plugin.getConfig().getInt("default_update_interval", 20));
             int clickCooldown = config.getInt("click_cooldown", -1);
+            boolean allowTargetPlayer = config.getBoolean("allow_target_player",
+                    plugin.getConfig().getBoolean("default_allow_target_player", false));
+            boolean allowOfflineTarget = config.getBoolean("allow_offline_target",
+                    plugin.getConfig().getBoolean("default_allow_offline_target", false));
 
             List<String> args = config.getStringList("args");
             String argsUsage = config.getString("args_usage");
@@ -126,6 +130,8 @@ public final class MenuLoader {
                     .registerCommand(registerCommand)
                     .updateInterval(updateInterval)
                     .clickCooldown(clickCooldown)
+                    .allowTargetPlayer(allowTargetPlayer)
+                    .allowOfflineTarget(allowOfflineTarget)
                     .args(args)
                     .argsUsage(argsUsage)
                     .argRequirements(argRequirements.isEmpty() ? null : argRequirements)

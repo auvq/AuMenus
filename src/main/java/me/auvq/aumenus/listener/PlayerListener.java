@@ -6,6 +6,7 @@ import me.auvq.aumenus.menu.MenuHolder;
 import me.auvq.aumenus.util.Util;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -45,14 +46,21 @@ public final class PlayerListener implements Listener {
         Menu menu = menuOpt.get();
         Player player = event.getPlayer();
 
-        Player target = null;
+        OfflinePlayer target = null;
         Map<String, String> args = new HashMap<>();
         int argIndex = 0;
         for (int i = 1; i < parts.length; i++) {
-            if (parts[i].toLowerCase().startsWith("-p:")) {
+            if (menu.isAllowTargetPlayer() && parts[i].toLowerCase().startsWith("-p:")) {
                 String targetName = parts[i].substring(3);
                 target = Bukkit.getPlayer(targetName);
-                if (target == null || !target.isOnline()) {
+                if (target == null && menu.isAllowOfflineTarget()) {
+                    @SuppressWarnings("deprecation")
+                    OfflinePlayer offline = Bukkit.getOfflinePlayer(targetName);
+                    if (offline.hasPlayedBefore()) {
+                        target = offline;
+                    }
+                }
+                if (target == null) {
                     player.sendMessage(Util.parse("&cPlayer '" + targetName + "' not found."));
                     return;
                 }

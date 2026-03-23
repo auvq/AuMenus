@@ -25,6 +25,7 @@ import me.auvq.aumenus.requirement.RequirementRegistry;
 import me.auvq.aumenus.util.Util;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -127,7 +128,7 @@ public final class AuMenus extends JavaPlugin {
         openMenu(player, null, menu, args);
     }
 
-    public void openMenu(@NotNull Player player, @Nullable Player target, @NotNull Menu menu,
+    public void openMenu(@NotNull Player player, @Nullable OfflinePlayer target, @NotNull Menu menu,
                           @NotNull Map<String, String> args) {
         if (!player.isOnline()) {
             return;

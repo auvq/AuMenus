@@ -6,6 +6,7 @@ import me.auvq.aumenus.AuMenus;
 import me.auvq.aumenus.item.MenuItem;
 import me.auvq.aumenus.util.Util;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
@@ -43,12 +44,12 @@ public final class MenuHolder implements InventoryHolder {
         this(menu, player, null, arguments, 1);
     }
 
-    public MenuHolder(@NotNull Menu menu, @NotNull Player player, @Nullable Player target,
+    public MenuHolder(@NotNull Menu menu, @NotNull Player player, @Nullable OfflinePlayer target,
                        @NotNull Map<String, String> arguments) {
         this(menu, player, target, arguments, 1);
     }
 
-    public MenuHolder(@NotNull Menu menu, @NotNull Player player, @Nullable Player target,
+    public MenuHolder(@NotNull Menu menu, @NotNull Player player, @Nullable OfflinePlayer target,
                        @NotNull Map<String, String> arguments, int initialPage) {
         this.menu = menu;
         this.playerId = player.getUniqueId();
@@ -76,13 +77,13 @@ public final class MenuHolder implements InventoryHolder {
         return Bukkit.getPlayer(playerId);
     }
 
-    public @Nullable Player getTarget() {
-        return targetId != null ? Bukkit.getPlayer(targetId) : null;
+    public @Nullable OfflinePlayer getTarget() {
+        return targetId != null ? Bukkit.getOfflinePlayer(targetId) : null;
     }
 
-    public @NotNull Player getPlaceholderPlayer() {
-        Player target = getTarget();
-        if (target != null && target.isOnline()) {
+    public @NotNull OfflinePlayer getPlaceholderTarget() {
+        OfflinePlayer target = getTarget();
+        if (target != null) {
             return target;
         }
         Player player = getPlayer();
@@ -90,6 +91,15 @@ public final class MenuHolder implements InventoryHolder {
             return player;
         }
         throw new IllegalStateException("No valid player for placeholder resolution");
+    }
+
+    public @NotNull String getTargetName() {
+        OfflinePlayer target = getTarget();
+        if (target != null && target.getName() != null) {
+            return target.getName();
+        }
+        Player player = getPlayer();
+        return player != null ? player.getName() : "Unknown";
     }
 
     public @Nullable MenuItem getActiveItem(int slot) {
@@ -149,13 +159,11 @@ public final class MenuHolder implements InventoryHolder {
         title = title.replace("{page}", String.valueOf(currentPage));
         title = title.replace("{max_page}", String.valueOf(getMaxPage()));
         title = title.replace("{player}", player.getName());
+        title = title.replace("{target}", getTargetName());
 
-        Player papiTarget = targetId != null ? Bukkit.getPlayer(targetId) : null;
-        Player placeholderPlayer = papiTarget != null && papiTarget.isOnline() ? papiTarget : player;
-        title = title.replace("{target}", placeholderPlayer.getName());
-
+        OfflinePlayer papiTarget = getPlaceholderTarget();
         if (AuMenus.getInstance().getHookProvider().isPapiEnabled()) {
-            title = AuMenus.getInstance().getHookProvider().papi().setPlaceholders(placeholderPlayer, title);
+            title = AuMenus.getInstance().getHookProvider().papi().setPlaceholders(papiTarget, title);
         }
 
         return title;

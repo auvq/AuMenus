@@ -28,6 +28,10 @@ public final class Menu {
     private final boolean registerCommand = true;
     private final int updateInterval;
     private final int clickCooldown;
+    @Builder.Default
+    private final boolean allowTargetPlayer = false;
+    @Builder.Default
+    private final boolean allowOfflineTarget = false;
 
     @Builder.Default
     private final @NotNull List<String> args = List.of();

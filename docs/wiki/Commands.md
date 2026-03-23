@@ -31,7 +31,7 @@ Meta types: `STRING`, `INTEGER`, `LONG`, `DOUBLE`, `BOOLEAN`.
 
 ## Target Player (`-p:`)
 
-Any menu command supports `-p:playername` to resolve placeholders against a different player. The menu opens for the sender, but all PAPI placeholders and `{target}` resolve for the target player.
+Menus that have `allow_target_player: true` support the `-p:playername` flag. This opens the menu for the sender, but resolves all PAPI placeholders and `{target}` against the specified player.
 
 ```
 /stats -p:Notch
@@ -41,6 +41,17 @@ Any menu command supports `-p:playername` to resolve placeholders against a diff
 This is useful for admin menus that show another player's data (balance, stats, etc). The `-p:` flag can appear anywhere in the arguments.
 
 In the menu title and items, use `{target}` to show the target player's name, or any PAPI placeholder to show their data.
+
+By default, only online players can be targeted. To allow offline players, add `allow_offline_target: true` to the menu config. Note that most PAPI placeholders won't resolve for offline players.
+
+```yaml
+title: 'Stats - {target}'
+allow_target_player: true
+allow_offline_target: false
+size: 27
+```
+
+Both options can also be set globally in `config.yml` as `default_allow_target_player` and `default_allow_offline_target`.
 
 ## Examples
 

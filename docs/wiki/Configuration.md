@@ -67,6 +67,26 @@ click_cooldown: 5
 
 Set to `-1` (or omit) to use the global default. Set to `0` to disable cooldown for this menu.
 
+### allow_target_player
+
+Enables the `-p:playername` flag for this menu's command. When used, PAPI placeholders and `{target}` resolve for the specified player instead of the sender. Defaults to `false`.
+
+```yaml
+allow_target_player: true
+```
+
+Can also be set globally via `default_allow_target_player` in `config.yml`.
+
+### allow_offline_target
+
+When `allow_target_player` is enabled, this allows targeting offline players. Defaults to `false`. Most PAPI placeholders won't resolve for offline players.
+
+```yaml
+allow_offline_target: true
+```
+
+Can also be set globally via `default_allow_offline_target` in `config.yml`.
+
 ### args
 
 Argument names the menu accepts. Passed via command or `/am open`.

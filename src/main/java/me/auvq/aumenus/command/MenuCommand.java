@@ -13,6 +13,7 @@ import me.auvq.aumenus.menu.Menu;
 import me.auvq.aumenus.util.Util;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -89,17 +90,24 @@ public final class MenuCommand {
             return 0;
         }
 
-        Player target = null;
+        OfflinePlayer target = null;
         Map<String, String> menuArgs = new HashMap<>();
         try {
             String argsStr = StringArgumentType.getString(context, "args");
             String[] argValues = argsStr.split("\\s+");
             int argIndex = 0;
             for (String argValue : argValues) {
-                if (argValue.toLowerCase().startsWith("-p:")) {
+                if (menu.isAllowTargetPlayer() && argValue.toLowerCase().startsWith("-p:")) {
                     String targetName = argValue.substring(3);
                     target = Bukkit.getPlayer(targetName);
-                    if (target == null || !target.isOnline()) {
+                    if (target == null && menu.isAllowOfflineTarget()) {
+                        @SuppressWarnings("deprecation")
+                        OfflinePlayer offline = Bukkit.getOfflinePlayer(targetName);
+                        if (offline.hasPlayedBefore()) {
+                            target = offline;
+                        }
+                    }
+                    if (target == null) {
                         player.sendMessage(Util.parse("&cPlayer '" + targetName + "' not found."));
                         return 0;
                     }
