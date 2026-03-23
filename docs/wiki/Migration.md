@@ -84,11 +84,11 @@ If you are migrating from DeluxeMenus, here are the key behavioral differences t
 
 ### Color Codes
 
-Both plugins support legacy color codes (`&a`, `&#RRGGBB`). AuMenus converts them to MiniMessage internally. Colors reset formatting (bold, italic, etc.) — matching DM behavior.
+Both plugins support legacy color codes (`&a`, `&#RRGGBB`). AuMenus converts them to MiniMessage internally. Colors reset formatting (bold, italic, etc.) - matching DM behavior.
 
 AuMenus additionally supports MiniMessage tags (`<gradient>`, `<rainbow>`, `<hover>`, `<click>`, etc.) which DM does not.
 
-AuMenus automatically removes default italic on item names and lore. DM does not — items in DM show italic by default unless manually overridden with `&r`.
+AuMenus automatically removes default italic on item names and lore. DM does not - items in DM show italic by default unless manually overridden with `&r`.
 
 ### Refresh Timing
 

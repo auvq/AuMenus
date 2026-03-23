@@ -71,7 +71,7 @@ When using `refresh` after a `player` or `console` action, the command may not h
 on_click:
   - player: sethome myhome
   - sound: entity.experience_orb.pickup
-  - refresh                        # too fast — placeholders show old values
+  - refresh                        # too fast - placeholders show old values
 ```
 
 ```yaml
