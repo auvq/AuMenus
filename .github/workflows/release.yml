@@ -64,15 +64,24 @@ jobs:
       - name: Hangar
         run: |
           JWT=$(curl -s -X POST "https://hangar.papermc.io/api/v1/authenticate?apiKey=${{ secrets.HANGAR_KEY }}" | jq -r '.token')
+          cat > /tmp/version.json << 'ENDJSON'
+          {
+            "version": "${{ steps.version.outputs.version }}",
+            "channel": "Release",
+            "description": "${{ steps.notes.outputs.notes }}",
+            "platformDependencies": {"PAPER": ["1.21.1"]},
+            "files": [{"platforms": ["PAPER"]}]
+          }
+          ENDJSON
           curl -s -X POST "https://hangar.papermc.io/api/v1/projects/AuMenus/upload" \
             -H "Authorization: $JWT" \
-            -F 'versionUpload={"version":"${{ steps.version.outputs.version }}","channel":"Release","description":"${{ steps.notes.outputs.notes }}","platformDependencies":{"PAPER":["1.21.1"]},"files":[{"platforms":["PAPER"]}]};type=application/json' \
+            -F "versionUpload=@/tmp/version.json;type=application/json" \
             -F "files=@${{ steps.jar.outputs.path }}"
         continue-on-error: true
 
       - name: Polymart
         run: |
-          curl -s -X POST "https://api.polymart.org/v1/postUpdate" \
+          curl -s -X POST "https://api.polymart.org/v1/doPostUpdate" \
             -F "api_key=${{ secrets.POLYMART_KEY }}" \
             -F "resource_id=${{ secrets.POLYMART_RESOURCE }}" \
             -F "version=${{ steps.version.outputs.version }}" \
