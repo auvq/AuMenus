@@ -86,7 +86,6 @@ jobs:
 
       # BuiltByBit (API call)
       - name: Upload to BuiltByBit
-        if: ${{ secrets.BBB_TOKEN != '' }}
         run: |
           FILE=$(ls build/libs/*-all.jar | head -1)
           BASE64=$(base64 -w 0 "$FILE")
