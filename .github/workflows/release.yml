@@ -37,7 +37,7 @@ jobs:
 
       - name: Jar path
         id: jar
-        run: echo "path=$(ls build/libs/*-all.jar | head -1)" >> $GITHUB_OUTPUT
+        run: echo "path=$(ls build/libs/*.jar | head -1)" >> $GITHUB_OUTPUT
 
       - uses: softprops/action-gh-release@v2
         with:

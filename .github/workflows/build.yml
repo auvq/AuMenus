@@ -19,4 +19,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: AuMenus
-          path: build/libs/*-all.jar
+          path: build/libs/*.jar
