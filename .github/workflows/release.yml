@@ -13,6 +13,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/setup-java@v4
         with:
@@ -22,70 +23,75 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: chmod +x gradlew && ./gradlew build
 
-      - name: Version
-        id: version
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
-      - name: Release notes
-        id: notes
+      - name: Gather info
+        id: info
         run: |
-          NOTES=$(git tag -l --format='%(contents)' ${GITHUB_REF#refs/tags/})
-          [ -z "$NOTES" ] && NOTES="Release ${{ steps.version.outputs.version }}"
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$NOTES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          TAG=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG#v}
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Jar path
-        id: jar
-        run: echo "path=$(ls build/libs/*.jar | head -1)" >> $GITHUB_OUTPUT
+          git fetch --tags --force
+          NOTES=$(git for-each-ref --format='%(contents:subject)' "refs/tags/$TAG")
+          if [ -z "$NOTES" ]; then
+            NOTES="Release $VERSION"
+          fi
+          echo "notes=$NOTES" >> $GITHUB_OUTPUT
 
-      - uses: softprops/action-gh-release@v2
+          JAR=$(ls build/libs/*.jar | head -1)
+          echo "jar=$JAR" >> $GITHUB_OUTPUT
+          echo "jar_name=$(basename $JAR)" >> $GITHUB_OUTPUT
+
+          echo "Tag: $TAG"
+          echo "Version: $VERSION"
+          echo "Notes: $NOTES"
+          echo "Jar: $JAR"
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: v${{ steps.version.outputs.version }}
-          body: ${{ steps.notes.outputs.notes }}
-          files: ${{ steps.jar.outputs.path }}
+          name: v${{ steps.info.outputs.version }}
+          body: ${{ steps.info.outputs.notes }}
+          files: ${{ steps.info.outputs.jar }}
 
-      - uses: Kir-Antipov/mc-publish@v3.3
+      - name: Modrinth
+        uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: ${{ secrets.MODRINTH_ID }}
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
-          name: AuMenus v${{ steps.version.outputs.version }}
-          version: ${{ steps.version.outputs.version }}
+          name: AuMenus v${{ steps.info.outputs.version }}
+          version: ${{ steps.info.outputs.version }}
           version-type: release
           loaders: |
             paper
             folia
           game-versions: |
             >=1.21.1
-          files: ${{ steps.jar.outputs.path }}
-          changelog: ${{ steps.notes.outputs.notes }}
+          files: ${{ steps.info.outputs.jar }}
+          changelog: ${{ steps.info.outputs.notes }}
         continue-on-error: true
 
       - name: Hangar
         run: |
-          JWT=$(curl -s -X POST "https://hangar.papermc.io/api/v1/authenticate?apiKey=${{ secrets.HANGAR_KEY }}" | jq -r '.token')
-          cat > /tmp/version.json << 'ENDJSON'
-          {
-            "version": "${{ steps.version.outputs.version }}",
-            "channel": "Release",
-            "description": "${{ steps.notes.outputs.notes }}",
-            "platformDependencies": {"PAPER": ["1.21.1"]},
-            "files": [{"platforms": ["PAPER"]}]
-          }
-          ENDJSON
-          curl -s -X POST "https://hangar.papermc.io/api/v1/projects/AuMenus/upload" \
+          JWT=$(curl -sf -X POST "https://hangar.papermc.io/api/v1/authenticate?apiKey=${{ secrets.HANGAR_KEY }}" | jq -r '.token')
+          if [ -z "$JWT" ] || [ "$JWT" = "null" ]; then
+            echo "Auth failed"
+            exit 1
+          fi
+          echo '{"version":"${{ steps.info.outputs.version }}","channel":"Release","description":"${{ steps.info.outputs.notes }}","platformDependencies":{"PAPER":["1.21.1"]},"files":[{"platforms":["PAPER"]}]}' > /tmp/version.json
+          curl -sf -X POST "https://hangar.papermc.io/api/v1/projects/AuMenus/upload" \
             -H "Authorization: $JWT" \
             -F "versionUpload=@/tmp/version.json;type=application/json" \
-            -F "files=@${{ steps.jar.outputs.path }}"
+            -F "files=@${{ steps.info.outputs.jar }}"
         continue-on-error: true
 
       - name: Polymart
         run: |
-          curl -s -X POST "https://api.polymart.org/v1/doPostUpdate" \
+          curl -sf -X POST "https://api.polymart.org/v1/doPostUpdate" \
             -F "api_key=${{ secrets.POLYMART_KEY }}" \
             -F "resource_id=${{ secrets.POLYMART_RESOURCE }}" \
-            -F "version=${{ steps.version.outputs.version }}" \
-            -F "title=v${{ steps.version.outputs.version }}" \
-            -F "message=${{ steps.notes.outputs.notes }}" \
-            -F "file=@${{ steps.jar.outputs.path }}"
+            -F "version=${{ steps.info.outputs.version }}" \
+            -F "title=v${{ steps.info.outputs.version }}" \
+            -F "message=${{ steps.info.outputs.notes }}" \
+            -F "file=@${{ steps.info.outputs.jar }}"
         continue-on-error: true
