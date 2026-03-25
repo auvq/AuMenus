@@ -23,9 +23,13 @@ import me.auvq.aumenus.meta.MetaStore;
 import me.auvq.aumenus.requirement.RequirementList;
 import me.auvq.aumenus.requirement.RequirementRegistry;
 import me.auvq.aumenus.util.Util;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandMap;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -286,6 +290,72 @@ public final class AuMenus extends JavaPlugin {
     }
 
     public void registerMenuCommands() {
+        CommandMap commandMap = Bukkit.getCommandMap();
+
+        Map<String, Command> knownCommands = commandMap.getKnownCommands();
+        knownCommands.entrySet().removeIf(entry ->
+                entry.getValue().getDescription().startsWith("Opens the ")
+                        && entry.getValue().getDescription().endsWith(" menu"));
+
+        for (Menu menu : menuRegistry.all()) {
+            if (menu.getCommand() == null || menu.getCommand().isEmpty() || !menu.isRegisterCommand()) {
+                continue;
+            }
+
+            String cmd = menu.getCommand().toLowerCase();
+            if (commandMap.getCommand(cmd) != null) {
+                continue;
+            }
+
+            String menuName = menu.getName();
+            List<String> aliases = menu.getCommandAliases().stream()
+                    .map(String::toLowerCase).toList();
+
+            Command dynamicCmd = new Command(cmd, "Opens the " + menuName + " menu", "/" + cmd, aliases) {
+                @Override
+                public boolean execute(@NotNull CommandSender sender, @NotNull String label, String @NotNull [] args) {
+                    if (!(sender instanceof Player player)) {
+                        sender.sendMessage(Util.parse("&cOnly players can use this command."));
+                        return true;
+                    }
+                    Menu targetMenu = menuRegistry.findByName(menuName).orElse(null);
+                    if (targetMenu == null) {
+                        return true;
+                    }
+
+                    OfflinePlayer target = null;
+                    Map<String, String> menuArgs = new HashMap<>();
+                    int argIndex = 0;
+                    for (String arg : args) {
+                        if (targetMenu.isAllowTargetPlayer() && arg.toLowerCase().startsWith("-p:")) {
+                            String targetName = arg.substring(3);
+                            target = Bukkit.getPlayer(targetName);
+                            if (target == null && targetMenu.isAllowOfflineTarget()) {
+                                @SuppressWarnings("deprecation")
+                                OfflinePlayer offline = Bukkit.getOfflinePlayer(targetName);
+                                if (offline.hasPlayedBefore()) {
+                                    target = offline;
+                                }
+                            }
+                            if (target == null) {
+                                player.sendMessage(Util.parse("&cPlayer '" + targetName + "' not found."));
+                                return true;
+                            }
+                            continue;
+                        }
+                        if (argIndex < targetMenu.getArgs().size()) {
+                            String sanitized = MiniMessage.miniMessage().escapeTags(arg);
+                            menuArgs.put(targetMenu.getArgs().get(argIndex), sanitized);
+                            argIndex++;
+                        }
+                    }
+                    openMenu(player, target, targetMenu, menuArgs);
+                    return true;
+                }
+            };
+            commandMap.register("aumenus", dynamicCmd);
+        }
+
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.getScheduler().run(this, task -> player.updateCommands(), null);
         }
