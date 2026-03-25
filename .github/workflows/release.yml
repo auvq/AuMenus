@@ -28,21 +28,16 @@ jobs:
         run: |
           TAG=${GITHUB_REF#refs/tags/}
           VERSION=${TAG#v}
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
           git fetch --tags --force
           NOTES=$(git for-each-ref --format='%(contents:subject)' "refs/tags/$TAG")
-          if [ -z "$NOTES" ]; then
-            NOTES="Release $VERSION"
-          fi
-          echo "notes=$NOTES" >> $GITHUB_OUTPUT
-
+          [ -z "$NOTES" ] && NOTES="Release $VERSION"
           JAR=$(ls build/libs/*.jar | head -1)
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "notes=$NOTES" >> $GITHUB_OUTPUT
           echo "jar=$JAR" >> $GITHUB_OUTPUT
           echo "jar_name=$(basename $JAR)" >> $GITHUB_OUTPUT
 
-          echo "Tag: $TAG"
           echo "Version: $VERSION"
           echo "Notes: $NOTES"
           echo "Jar: $JAR"
@@ -73,25 +68,24 @@ jobs:
 
       - name: Hangar
         run: |
-          JWT=$(curl -sf -X POST "https://hangar.papermc.io/api/v1/authenticate?apiKey=${{ secrets.HANGAR_KEY }}" | jq -r '.token')
-          if [ -z "$JWT" ] || [ "$JWT" = "null" ]; then
-            echo "Auth failed"
-            exit 1
-          fi
+          JWT=$(curl -s -X POST "https://hangar.papermc.io/api/v1/authenticate?apiKey=${{ secrets.HANGAR_KEY }}" | jq -r '.token')
           echo '{"version":"${{ steps.info.outputs.version }}","channel":"Release","description":"${{ steps.info.outputs.notes }}","platformDependencies":{"PAPER":["1.21.1"]},"files":[{"platforms":["PAPER"]}]}' > /tmp/version.json
-          curl -sf -X POST "https://hangar.papermc.io/api/v1/projects/AuMenus/upload" \
-            -H "Authorization: $JWT" \
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "https://hangar.papermc.io/api/v1/projects/AuMenus/upload" \
+            -H "Authorization: HangarAuth $JWT" \
             -F "versionUpload=@/tmp/version.json;type=application/json" \
-            -F "files=@${{ steps.info.outputs.jar }}"
+            -F "files=@${{ steps.info.outputs.jar }}")
+          echo "$RESPONSE"
         continue-on-error: true
 
       - name: Polymart
         run: |
-          curl -sf -X POST "https://api.polymart.org/v1/doPostUpdate" \
+          RESPONSE=$(curl -s -X POST "https://api.polymart.org/v1/postUpdate" \
             -F "api_key=${{ secrets.POLYMART_KEY }}" \
             -F "resource_id=${{ secrets.POLYMART_RESOURCE }}" \
             -F "version=${{ steps.info.outputs.version }}" \
             -F "title=v${{ steps.info.outputs.version }}" \
             -F "message=${{ steps.info.outputs.notes }}" \
-            -F "file=@${{ steps.info.outputs.jar }}"
+            -F "file=@${{ steps.info.outputs.jar }}")
+          echo "$RESPONSE"
         continue-on-error: true
+
