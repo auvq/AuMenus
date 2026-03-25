@@ -50,7 +50,7 @@ Add AuMenus as a dependency to register custom actions, requirements, and listen
 <dependency>
     <groupId>com.github.auvq</groupId>
     <artifactId>AuMenus</artifactId>
-    <version>main-SNAPSHOT</version>
+    <version>v1.0.2</version>
     <scope>provided</scope>
 </dependency>
 ```
@@ -62,11 +62,11 @@ repositories {
 }
 
 dependencies {
-    compileOnly("com.github.auvq:AuMenus:main-SNAPSHOT")
+    compileOnly("com.github.auvq:AuMenus:v1.0.0")
 }
 ```
 
-Replace `main-SNAPSHOT` with a specific release tag once available.
+Replace `v1.0.0` with the latest release tag.
 
 ## Contribute
 

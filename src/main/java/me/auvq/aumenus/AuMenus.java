@@ -36,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -293,9 +294,16 @@ public final class AuMenus extends JavaPlugin {
         CommandMap commandMap = Bukkit.getCommandMap();
 
         Map<String, Command> knownCommands = commandMap.getKnownCommands();
-        knownCommands.entrySet().removeIf(entry ->
-                entry.getValue().getDescription().startsWith("Opens the ")
-                        && entry.getValue().getDescription().endsWith(" menu"));
+        List<String> toRemove = new ArrayList<>();
+        for (Map.Entry<String, Command> entry : knownCommands.entrySet()) {
+            if (entry.getValue().getDescription().startsWith("Opens the ")
+                    && entry.getValue().getDescription().endsWith(" menu")) {
+                toRemove.add(entry.getKey());
+            }
+        }
+        for (String key : toRemove) {
+            knownCommands.remove(key);
+        }
 
         for (Menu menu : menuRegistry.all()) {
             if (menu.getCommand() == null || menu.getCommand().isEmpty() || !menu.isRegisterCommand()) {
