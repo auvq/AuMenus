@@ -67,25 +67,39 @@ jobs:
         continue-on-error: true
 
       - name: Hangar
+        env:
+          VERSION: ${{ steps.info.outputs.version }}
+          NOTES: ${{ steps.info.outputs.notes }}
+          JAR: ${{ steps.info.outputs.jar }}
+          HANGAR_KEY: ${{ secrets.HANGAR_KEY }}
         run: |
-          JWT=$(curl -s -X POST "https://hangar.papermc.io/api/v1/authenticate?apiKey=${{ secrets.HANGAR_KEY }}" | jq -r '.token')
-          echo '{"version":"${{ steps.info.outputs.version }}","channel":"Release","description":"${{ steps.info.outputs.notes }}","platformDependencies":{"PAPER":["1.21.1"]},"files":[{"platforms":["PAPER"]}]}' > /tmp/version.json
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "https://hangar.papermc.io/api/v1/projects/AuMenus/upload" \
+          JWT=$(curl -s -X POST "https://hangar.papermc.io/api/v1/authenticate?apiKey=$HANGAR_KEY" | jq -r '.token')
+          echo "JWT length: ${#JWT}"
+          jq -n --arg v "$VERSION" --arg d "$NOTES" \
+            '{"version":$v,"channel":"Release","description":$d,"platformDependencies":{"PAPER":["1.21.1"]},"files":[{"platforms":["PAPER"]}]}' > /tmp/version.json
+          cat /tmp/version.json
+          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "https://hangar.papermc.io/api/v1/projects/AuMenus/upload" \
             -H "Authorization: HangarAuth $JWT" \
             -F "versionUpload=@/tmp/version.json;type=application/json" \
-            -F "files=@${{ steps.info.outputs.jar }}")
+            -F "files=@$JAR")
           echo "$RESPONSE"
         continue-on-error: true
 
       - name: Polymart
+        env:
+          VERSION: ${{ steps.info.outputs.version }}
+          NOTES: ${{ steps.info.outputs.notes }}
+          JAR: ${{ steps.info.outputs.jar }}
+          POLYMART_KEY: ${{ secrets.POLYMART_KEY }}
+          POLYMART_RESOURCE: ${{ secrets.POLYMART_RESOURCE }}
         run: |
-          RESPONSE=$(curl -s -X POST "https://api.polymart.org/v1/postUpdate" \
-            -F "api_key=${{ secrets.POLYMART_KEY }}" \
-            -F "resource_id=${{ secrets.POLYMART_RESOURCE }}" \
-            -F "version=${{ steps.info.outputs.version }}" \
-            -F "title=v${{ steps.info.outputs.version }}" \
-            -F "message=${{ steps.info.outputs.notes }}" \
-            -F "file=@${{ steps.info.outputs.jar }}")
+          RESPONSE=$(curl -s -X POST "https://api.polymart.org/v1/doPostUpdate" \
+            -F "api_key=$POLYMART_KEY" \
+            -F "resource_id=$POLYMART_RESOURCE" \
+            -F "version=$VERSION" \
+            -F "title=v$VERSION" \
+            -F "message=$NOTES" \
+            -F "file=@$JAR")
           echo "$RESPONSE"
         continue-on-error: true
 
