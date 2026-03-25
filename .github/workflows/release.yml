@@ -8,6 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-java@v4
         with:
@@ -15,33 +17,31 @@ jobs:
           distribution: 'temurin'
 
       - uses: gradle/actions/setup-gradle@v4
-
       - run: chmod +x gradlew && ./gradlew build
 
-      - name: Get version from tag
+      - name: Version
         id: version
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Get release notes from tag message
+      - name: Release notes
         id: notes
         run: |
-          git fetch --tags --force
           NOTES=$(git tag -l --format='%(contents)' ${GITHUB_REF#refs/tags/})
-          if [ -z "$NOTES" ]; then
-            NOTES="Release ${{ steps.version.outputs.version }}"
-          fi
+          [ -z "$NOTES" ] && NOTES="Release ${{ steps.version.outputs.version }}"
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # GitHub Release
+      - name: Jar path
+        id: jar
+        run: echo "path=$(ls build/libs/*-all.jar | head -1)" >> $GITHUB_OUTPUT
+
       - uses: softprops/action-gh-release@v2
         with:
           name: v${{ steps.version.outputs.version }}
           body: ${{ steps.notes.outputs.notes }}
-          files: build/libs/*-all.jar
+          files: ${{ steps.jar.outputs.path }}
 
-      # Modrinth
       - uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: ${{ secrets.MODRINTH_ID }}
@@ -49,49 +49,31 @@ jobs:
           name: AuMenus v${{ steps.version.outputs.version }}
           version: ${{ steps.version.outputs.version }}
           version-type: release
-          loaders: paper folia
-          game-versions: 1.21.1
-          files: build/libs/*-all.jar
+          loaders: |
+            paper
+            folia
+          game-versions: |
+            >=1.21.1
+          files: ${{ steps.jar.outputs.path }}
           changelog: ${{ steps.notes.outputs.notes }}
         continue-on-error: true
 
-      # Hangar
-      - uses: HSGamer/action-mcreleaser@v1
-        with:
-          files: build/libs/*-all.jar
-          platforms: hangar
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-          DESCRIPTION: ${{ steps.notes.outputs.notes }}
-          GAME_VERSIONS: "1.21.1"
-          HANGAR_KEY: ${{ secrets.HANGAR_KEY }}
-          HANGAR_PROJECT: AuMenus
-          HANGAR_OWNER: auvq
-          HANGAR_PLATFORM: PAPER
-          HANGAR_CHANNEL: Release
-        continue-on-error: true
-
-      # Polymart
-      - uses: HSGamer/action-mcreleaser@v1
-        with:
-          files: build/libs/*-all.jar
-          platforms: polymart
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-          DESCRIPTION: ${{ steps.notes.outputs.notes }}
-          POLYMART_KEY: ${{ secrets.POLYMART_KEY }}
-          POLYMART_RESOURCE: ${{ secrets.POLYMART_RESOURCE }}
-          POLYMART_TAG: release
-        continue-on-error: true
-
-      # BuiltByBit (API call)
-      - name: Upload to BuiltByBit
+      - name: Hangar
         run: |
-          FILE=$(ls build/libs/*-all.jar | head -1)
-          BASE64=$(base64 -w 0 "$FILE")
-          FILENAME=$(basename "$FILE")
-          curl -s -X POST "https://api.builtbybit.com/v1/resources/${{ secrets.BBB_RESOURCE }}/versions" \
-            -H "Authorization: Private ${{ secrets.BBB_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"title\":\"v${{ steps.version.outputs.version }}\",\"description\":\"${{ steps.notes.outputs.notes }}\",\"file\":{\"name\":\"$FILENAME\",\"content\":\"$BASE64\"}}"
+          JWT=$(curl -s -X POST "https://hangar.papermc.io/api/v1/authenticate?apiKey=${{ secrets.HANGAR_KEY }}" | jq -r '.token')
+          curl -s -X POST "https://hangar.papermc.io/api/v1/projects/AuMenus/upload" \
+            -H "Authorization: $JWT" \
+            -F 'versionUpload={"version":"${{ steps.version.outputs.version }}","channel":"Release","description":"${{ steps.notes.outputs.notes }}","platformDependencies":{"PAPER":["1.21.1"]},"files":[{"platforms":["PAPER"]}]};type=application/json' \
+            -F "files=@${{ steps.jar.outputs.path }}"
+        continue-on-error: true
+
+      - name: Polymart
+        run: |
+          curl -s -X POST "https://api.polymart.org/v1/postUpdate" \
+            -F "api_key=${{ secrets.POLYMART_KEY }}" \
+            -F "resource_id=${{ secrets.POLYMART_RESOURCE }}" \
+            -F "version=${{ steps.version.outputs.version }}" \
+            -F "title=v${{ steps.version.outputs.version }}" \
+            -F "message=${{ steps.notes.outputs.notes }}" \
+            -F "file=@${{ steps.jar.outputs.path }}"
         continue-on-error: true
