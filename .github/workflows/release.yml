@@ -29,12 +29,14 @@ jobs:
           TAG=${GITHUB_REF#refs/tags/}
           VERSION=${TAG#v}
           git fetch --tags --force
-          NOTES=$(git for-each-ref --format='%(contents:subject)' "refs/tags/$TAG")
+          NOTES=$(git for-each-ref --format='%(contents)' "refs/tags/$TAG")
           [ -z "$NOTES" ] && NOTES="Release $VERSION"
           JAR=$(ls build/libs/*.jar | head -1)
 
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "notes=$NOTES" >> $GITHUB_OUTPUT
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           echo "jar=$JAR" >> $GITHUB_OUTPUT
 
       - name: GitHub Release
