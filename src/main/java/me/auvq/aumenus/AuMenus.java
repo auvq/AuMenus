@@ -162,8 +162,7 @@ public final class AuMenus extends JavaPlugin {
         }
 
         String current = lastOpenedMenus.get(player.getUniqueId());
-        String prev = previousMenus.get(player.getUniqueId());
-        if (current != null && !menu.getName().equals(prev)) {
+        if (current != null && !current.equals(menu.getName())) {
             previousMenus.put(player.getUniqueId(), current);
         }
         lastOpenedMenus.put(player.getUniqueId(), menu.getName());

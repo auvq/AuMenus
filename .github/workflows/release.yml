@@ -39,12 +39,6 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
           echo "jar=$JAR" >> $GITHUB_OUTPUT
 
-      - name: Debug
-        run: |
-          echo "=== NOTES START ==="
-          echo "${{ steps.info.outputs.notes }}"
-          echo "=== NOTES END ==="
-
       - name: GitHub Release
         uses: softprops/action-gh-release@v2
         with:
