@@ -29,7 +29,7 @@ jobs:
           TAG=${GITHUB_REF#refs/tags/}
           VERSION=${TAG#v}
           git fetch --tags --force
-          NOTES=$(git for-each-ref --format='%(contents)' "refs/tags/$TAG")
+          NOTES=$(git tag -l --format='%(contents)' "$TAG")
           [ -z "$NOTES" ] && NOTES="Release $VERSION"
           JAR=$(ls build/libs/*.jar | head -1)
 
@@ -39,12 +39,20 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
           echo "jar=$JAR" >> $GITHUB_OUTPUT
 
+      - name: Debug
+        run: |
+          echo "=== NOTES START ==="
+          echo "${{ steps.info.outputs.notes }}"
+          echo "=== NOTES END ==="
+
       - name: GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: v${{ steps.info.outputs.version }}
           body: ${{ steps.info.outputs.notes }}
           files: ${{ steps.info.outputs.jar }}
+          make_latest: true
+          generate_release_notes: false
 
       - name: Modrinth
         uses: Kir-Antipov/mc-publish@v3.3
