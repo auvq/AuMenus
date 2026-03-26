@@ -8,3 +8,7 @@ default_update_interval: 20
 
 # Click cooldown in ticks to prevent spam-clicking (2 = 100ms)
 click_cooldown: 2
+
+# Messages (MiniMessage supported)
+messages:
+  player_not_found: "&cPlayer '{player}' not found."

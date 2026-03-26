@@ -96,9 +96,28 @@ public final class MenuCommand {
             String argsStr = StringArgumentType.getString(context, "args");
             String[] argValues = argsStr.split("\\s+");
             int argIndex = 0;
-            for (String argValue : argValues) {
-                if (menu.isAllowTargetPlayer() && argValue.toLowerCase().startsWith("-p:")) {
-                    String targetName = argValue.substring(3);
+
+            if (menu.isAllowTargetPlayer() && menu.isTargetPlayerArg() && argValues.length > 0) {
+                Player onlineTarget = Bukkit.getPlayer(argValues[0]);
+                if (onlineTarget != null) {
+                    target = onlineTarget;
+                } else if (menu.isAllowOfflineTarget()) {
+                    @SuppressWarnings("deprecation")
+                    OfflinePlayer offline = Bukkit.getOfflinePlayer(argValues[0]);
+                    if (offline.hasPlayedBefore()) {
+                        target = offline;
+                    }
+                }
+                if (target == null) {
+                    player.sendMessage(Util.playerNotFound(argValues[0]));
+                    return 0;
+                }
+            }
+
+            int startIndex = (target != null && menu.isTargetPlayerArg()) ? 1 : 0;
+            for (int i = startIndex; i < argValues.length; i++) {
+                if (menu.isAllowTargetPlayer() && argValues[i].toLowerCase().startsWith("-p:")) {
+                    String targetName = argValues[i].substring(3);
                     target = Bukkit.getPlayer(targetName);
                     if (target == null && menu.isAllowOfflineTarget()) {
                         @SuppressWarnings("deprecation")
@@ -114,7 +133,7 @@ public final class MenuCommand {
                     continue;
                 }
                 if (argIndex < menu.getArgs().size()) {
-                    String sanitized = MiniMessage.miniMessage().escapeTags(argValue);
+                    String sanitized = MiniMessage.miniMessage().escapeTags(argValues[i]);
                     menuArgs.put(menu.getArgs().get(argIndex), sanitized);
                     argIndex++;
                 }
@@ -169,7 +188,7 @@ public final class MenuCommand {
         if (targetName != null) {
             target = Bukkit.getPlayer(targetName);
             if (target == null) {
-                sender.sendMessage(Util.parse("&cPlayer '" + targetName + "' not found."));
+                sender.sendMessage(Util.playerNotFound(targetName));
                 return 0;
             }
         } else if (sender instanceof Player player) {
@@ -256,7 +275,7 @@ public final class MenuCommand {
 
         Player target = Bukkit.getPlayer(playerName);
         if (target == null) {
-            sender.sendMessage(Util.parse("&cPlayer '" + playerName + "' not found."));
+            sender.sendMessage(Util.playerNotFound(playerName));
             return 0;
         }
 
@@ -377,7 +396,7 @@ public final class MenuCommand {
 
         Player target = Bukkit.getPlayer(playerName);
         if (target == null) {
-            sender.sendMessage(Util.parse("&cPlayer '" + playerName + "' not found."));
+            sender.sendMessage(Util.playerNotFound(playerName));
             return 0;
         }
 
@@ -399,7 +418,7 @@ public final class MenuCommand {
 
         Player target = Bukkit.getPlayer(playerName);
         if (target == null) {
-            sender.sendMessage(Util.parse("&cPlayer '" + playerName + "' not found."));
+            sender.sendMessage(Util.playerNotFound(playerName));
             return 0;
         }
 

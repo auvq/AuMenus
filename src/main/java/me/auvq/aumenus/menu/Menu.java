@@ -32,6 +32,8 @@ public final class Menu {
     private final boolean allowTargetPlayer = false;
     @Builder.Default
     private final boolean allowOfflineTarget = false;
+    @Builder.Default
+    private final boolean targetPlayerArg = false;
 
     @Builder.Default
     private final @NotNull List<String> args = List.of();

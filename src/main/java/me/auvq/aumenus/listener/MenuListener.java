@@ -82,8 +82,10 @@ public final class MenuListener implements Listener {
             RequirementList.EvaluationResult result = resolved.evaluateDetailed(player, requirementRegistry);
             if (!result.passed()) {
                 handleDenyActions(player, resolved, result.failed());
+                handlePerCheckDeny(player, result.failedOptional());
                 return;
             }
+            handlePerCheckDeny(player, result.failedOptional());
             handleSuccessActions(player, resolved, result.passed_list());
         }
 
@@ -160,6 +162,16 @@ public final class MenuListener implements Listener {
         }
         if (!requirements.getSuccessActions().isEmpty()) {
             actionRegistry.executeActions(player, requirements.getSuccessActions());
+        }
+    }
+
+    private void handlePerCheckDeny(@NotNull Player player,
+                                      @NotNull List<Requirement> failedOptional) {
+        for (Requirement req : failedOptional) {
+            if (!req.getDenyActions().isEmpty()) {
+                DenyContext context = computeDenyContext(player, req);
+                actionRegistry.executeActions(player, applyDenyReplacements(req.getDenyActions(), context));
+            }
         }
     }
 

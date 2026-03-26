@@ -5,7 +5,6 @@
 # AuMenus
 **Lightweight, open-source GUI menu plugin for Paper & Folia 1.21.1+**
 
-[![Build](https://img.shields.io/github/actions/workflow/status/auvq/AuMenus/build.yml?branch=main&label=build)](https://github.com/auvq/AuMenus/actions)
 [![Servers](https://img.shields.io/bstats/servers/30368?label=servers&color=brightgreen)](https://bstats.org/plugin/bukkit/AuMenus/30368)
 [![Discord](https://img.shields.io/discord/1485295113566421033?label=chat&logo=discord&color=5865F2)](https://discord.gg/B7ArGXP6)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -77,6 +76,14 @@ git clone https://github.com/auvq/AuMenus.git
 cd AuMenus
 ./gradlew build
 ```
+
+## Download
+
+- [Modrinth](https://modrinth.com/plugin/aumenus)
+- [Hangar](https://hangar.papermc.io/AuStudios/AuMenus)
+- [SpigotMC](https://www.spigotmc.org/resources/aumenus.133716/)
+- [Polymart](https://polymart.org/product/9552/aumenus)
+- [BuiltByBit](https://builtbybit.com/resources/aumenus.100035/)
 
 ## Support
 

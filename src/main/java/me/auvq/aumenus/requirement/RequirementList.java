@@ -49,10 +49,11 @@ public final class RequirementList {
     public @NotNull EvaluationResult evaluateDetailed(@NotNull Player player,
                                                        @NotNull RequirementRegistry registry) {
         if (requirements.isEmpty()) {
-            return new EvaluationResult(true, List.of(), List.of());
+            return new EvaluationResult(true, List.of(), List.of(), List.of());
         }
 
         List<Requirement> failed = new ArrayList<>();
+        List<Requirement> failedOptional = new ArrayList<>();
         List<Requirement> passedList = new ArrayList<>();
         int passedCount = 0;
         int target = minimumRequired > 0 ? minimumRequired : (requirements.size() - countOptional());
@@ -62,19 +63,20 @@ public final class RequirementList {
                 passedCount++;
                 passedList.add(req);
                 if (stopAtSuccess && passedCount >= target) {
-                    return new EvaluationResult(true, List.of(), passedList);
+                    return new EvaluationResult(true, List.of(), passedList, failedOptional);
                 }
                 continue;
             }
 
             if (req.isOptional()) {
+                failedOptional.add(req);
                 continue;
             }
 
             failed.add(req);
         }
 
-        return new EvaluationResult(passedCount >= target, failed, passedList);
+        return new EvaluationResult(passedCount >= target, failed, passedList, failedOptional);
     }
 
     private int countOptional() {
@@ -88,5 +90,6 @@ public final class RequirementList {
     }
 
     public record EvaluationResult(boolean passed, @NotNull List<Requirement> failed,
-                                       @NotNull List<Requirement> passed_list) {}
+                                       @NotNull List<Requirement> passed_list,
+                                       @NotNull List<Requirement> failedOptional) {}
 }

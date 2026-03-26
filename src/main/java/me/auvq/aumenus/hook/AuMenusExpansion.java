@@ -48,7 +48,7 @@ public final class AuMenusExpansion extends PlaceholderExpansion {
                 boolean inMenu = plugin.getMenuRegistry().getOpenMenu(player.getUniqueId()).isPresent();
                 return String.valueOf(inMenu);
             }
-            case "opened_menu" -> {
+            case "current_menu", "opened_menu", "menu" -> {
                 MenuHolder holder = plugin.getMenuRegistry().getOpenMenu(player.getUniqueId()).orElse(null);
                 if (holder == null) {
                     return "";
@@ -58,6 +58,10 @@ public final class AuMenusExpansion extends PlaceholderExpansion {
             case "last_menu" -> {
                 String last = plugin.getLastOpenedMenus().get(player.getUniqueId());
                 return last != null ? last : "";
+            }
+            case "previous_menu" -> {
+                String prev = plugin.getPreviousMenus().get(player.getUniqueId());
+                return prev != null ? prev : "";
             }
         }
 

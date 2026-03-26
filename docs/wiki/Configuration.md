@@ -77,6 +77,17 @@ allow_target_player: true
 
 Can also be set globally via `default_allow_target_player` in `config.yml`.
 
+### target_player_arg
+
+When `allow_target_player` is enabled, this lets the first command argument be the target player name directly, without needing the `-p:` prefix. Tab completion suggests online player names.
+
+```yaml
+allow_target_player: true
+target_player_arg: true
+```
+
+With this, `/stats Steve` resolves placeholders for Steve. Without it, you'd need `/stats -p:Steve`. Both `-p:` and the direct argument work when this is enabled. Defaults to `false`.
+
 ### allow_offline_target
 
 When `allow_target_player` is enabled, this allows targeting offline players. Defaults to `false`. Most PAPI placeholders won't resolve for offline players.
@@ -193,7 +204,7 @@ material: "placeholder-%some_material_placeholder%"
 Third-party item plugins (requires the plugin installed):
 
 ```yaml
-material: "hdb-12345"                          # HeadDatabase head by ID
+material: "hdb-12345"                          # HeadDatabase head by ID (https://headdb.org)
 material: "itemsadder-namespace:item_name"     # ItemsAdder custom item
 material: "oraxen-custom_sword"                # Oraxen custom item
 material: "nexo-custom_armor"                  # Nexo custom item
@@ -415,10 +426,10 @@ on_left_click:         # Left click
 on_right_click:        # Right click
 on_shift_left_click:   # Shift + left
 on_shift_right_click:  # Shift + right
-on_middle_click:       # Middle click
+on_middle_click:       # Middle click (creative mode only)
 ```
 
-Specific click types take priority over `on_click`.
+Specific click types take priority over `on_click`. Middle click only works in creative mode.
 
 ### Click Requirements
 

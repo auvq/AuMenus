@@ -152,17 +152,14 @@ AuMenus automatically converts underscores to dots in sound names if no dots are
 - Persistent player metadata (PDC-backed `meta` actions)
 - In-game visual menu editor (`/am editor`)
 - Menu creation command (`/am create`)
-- MiniMessage support (gradients, rainbow, hover, click events)
-- `placeholder-` material (dynamic resolution from PAPI)
-- `texture-` head prefix
-- Equipment slots as materials (`main_hand`, `off_hand`, `armor_*`)
 - Shorthand requirement syntax
 - Requirement deny placeholders (`{needed}`, `{has}`, `{remaining}`)
-- `dynamic_amount` (placeholder-resolved stack size)
+- Expression engine (`javascript`/`expression` type with `&&`, `||`, string methods)
 - `lore_append_mode` (OVERRIDE, TOP, BOTTOM, IGNORE)
-- `enchantment_glint_override`, `hide_tooltip`, `rarity`
-- `item_model`, `tooltip_style` (1.21.2+)
+- `rarity`, `item_model`, `tooltip_style` (1.21.2+)
+- Target player system (`-p:name` and `target_player_arg`)
 - Folia support
 - Developer API with custom actions, requirements, and cancellable events
 - Config error visualization (red glass pane with error in lore)
 - Duplicate item name detection
+- Configurable messages

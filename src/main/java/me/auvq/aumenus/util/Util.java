@@ -1,5 +1,6 @@
 package me.auvq.aumenus.util;
 
+import me.auvq.aumenus.AuMenus;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
@@ -29,6 +30,15 @@ public final class Util {
     private static final Pattern SECTION_CODE_PATTERN = Pattern.compile("§([0-9a-fk-orA-FK-OR])");
 
     private Util() {}
+
+    public static @NotNull String getMessage(@NotNull String key, @NotNull String defaultValue) {
+        return AuMenus.getInstance().getConfig().getString("messages." + key, defaultValue);
+    }
+
+    public static @NotNull Component playerNotFound(@NotNull String playerName) {
+        String msg = getMessage("player_not_found", "&cPlayer '{player}' not found.");
+        return parse(msg.replace("{player}", playerName));
+    }
 
     public static @NotNull String toLegacyMiniMessage(@Nullable String input) {
         if (input == null || input.isEmpty()) {

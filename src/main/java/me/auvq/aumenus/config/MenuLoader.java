@@ -107,6 +107,7 @@ public final class MenuLoader {
                     plugin.getConfig().getBoolean("default_allow_target_player", false));
             boolean allowOfflineTarget = config.getBoolean("allow_offline_target",
                     plugin.getConfig().getBoolean("default_allow_offline_target", false));
+            boolean targetPlayerArg = config.getBoolean("target_player_arg", false);
 
             List<String> args = config.getStringList("args");
             String argsUsage = config.getString("args_usage");
@@ -132,6 +133,7 @@ public final class MenuLoader {
                     .clickCooldown(clickCooldown)
                     .allowTargetPlayer(allowTargetPlayer)
                     .allowOfflineTarget(allowOfflineTarget)
+                    .targetPlayerArg(targetPlayerArg)
                     .args(args)
                     .argsUsage(argsUsage)
                     .argRequirements(argRequirements.isEmpty() ? null : argRequirements)

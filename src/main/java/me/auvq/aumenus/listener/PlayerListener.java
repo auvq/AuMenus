@@ -14,6 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,19 +50,22 @@ public final class PlayerListener implements Listener {
         OfflinePlayer target = null;
         Map<String, String> args = new HashMap<>();
         int argIndex = 0;
-        for (int i = 1; i < parts.length; i++) {
+
+        if (menu.isAllowTargetPlayer() && menu.isTargetPlayerArg() && parts.length > 1) {
+            target = resolveTarget(parts[1], menu.isAllowOfflineTarget());
+            if (target == null) {
+                player.sendMessage(Util.playerNotFound(parts[1]));
+                return;
+            }
+        }
+
+        int startIndex = (target != null && menu.isTargetPlayerArg()) ? 2 : 1;
+        for (int i = startIndex; i < parts.length; i++) {
             if (menu.isAllowTargetPlayer() && parts[i].toLowerCase().startsWith("-p:")) {
                 String targetName = parts[i].substring(3);
-                target = Bukkit.getPlayer(targetName);
-                if (target == null && menu.isAllowOfflineTarget()) {
-                    @SuppressWarnings("deprecation")
-                    OfflinePlayer offline = Bukkit.getOfflinePlayer(targetName);
-                    if (offline.hasPlayedBefore()) {
-                        target = offline;
-                    }
-                }
+                target = resolveTarget(targetName, menu.isAllowOfflineTarget());
                 if (target == null) {
-                    player.sendMessage(Util.parse("&cPlayer '" + targetName + "' not found."));
+                    player.sendMessage(Util.playerNotFound(targetName));
                     return;
                 }
                 continue;
@@ -76,10 +80,26 @@ public final class PlayerListener implements Listener {
         plugin.openMenu(player, target, menu, args);
     }
 
+    private @Nullable OfflinePlayer resolveTarget(@NotNull String name, boolean allowOffline) {
+        Player online = Bukkit.getPlayer(name);
+        if (online != null) {
+            return online;
+        }
+        if (allowOffline) {
+            @SuppressWarnings("deprecation")
+            OfflinePlayer offline = Bukkit.getOfflinePlayer(name);
+            if (offline.hasPlayedBefore()) {
+                return offline;
+            }
+        }
+        return null;
+    }
+
     @EventHandler
     public void onQuit(@NotNull PlayerQuitEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
         plugin.getLastOpenedMenus().remove(playerId);
+        plugin.getPreviousMenus().remove(playerId);
 
         MenuHolder holder = plugin.getMenuRegistry().getOpenMenu(playerId).orElse(null);
         if (holder == null) {

@@ -72,6 +72,8 @@ public final class AuMenus extends JavaPlugin {
     private ChatInput chatInput;
     @Getter
     private final Map<UUID, String> lastOpenedMenus = new ConcurrentHashMap<>();
+    @Getter
+    private final Map<UUID, String> previousMenus = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
@@ -159,6 +161,11 @@ public final class AuMenus extends JavaPlugin {
             return;
         }
 
+        String current = lastOpenedMenus.get(player.getUniqueId());
+        String prev = previousMenus.get(player.getUniqueId());
+        if (current != null && !menu.getName().equals(prev)) {
+            previousMenus.put(player.getUniqueId(), current);
+        }
         lastOpenedMenus.put(player.getUniqueId(), menu.getName());
 
         MenuHolder holder = new MenuHolder(menu, player, target, resolvedArgs);
@@ -290,6 +297,21 @@ public final class AuMenus extends JavaPlugin {
         }
     }
 
+    private @Nullable OfflinePlayer resolveTarget(@NotNull String name, boolean allowOffline) {
+        Player online = Bukkit.getPlayer(name);
+        if (online != null) {
+            return online;
+        }
+        if (allowOffline) {
+            @SuppressWarnings("deprecation")
+            OfflinePlayer offline = Bukkit.getOfflinePlayer(name);
+            if (offline.hasPlayedBefore()) {
+                return offline;
+            }
+        }
+        return null;
+    }
+
     public void registerMenuCommands() {
         CommandMap commandMap = Bukkit.getCommandMap();
 
@@ -334,31 +356,50 @@ public final class AuMenus extends JavaPlugin {
                     OfflinePlayer target = null;
                     Map<String, String> menuArgs = new HashMap<>();
                     int argIndex = 0;
-                    for (String arg : args) {
-                        if (targetMenu.isAllowTargetPlayer() && arg.toLowerCase().startsWith("-p:")) {
-                            String targetName = arg.substring(3);
-                            target = Bukkit.getPlayer(targetName);
-                            if (target == null && targetMenu.isAllowOfflineTarget()) {
-                                @SuppressWarnings("deprecation")
-                                OfflinePlayer offline = Bukkit.getOfflinePlayer(targetName);
-                                if (offline.hasPlayedBefore()) {
-                                    target = offline;
-                                }
-                            }
+
+                    if (targetMenu.isAllowTargetPlayer() && targetMenu.isTargetPlayerArg() && args.length > 0) {
+                        target = resolveTarget(args[0], targetMenu.isAllowOfflineTarget());
+                        if (target == null) {
+                            player.sendMessage(Util.playerNotFound(args[0]));
+                            return true;
+                        }
+                    }
+
+                    int startIndex = (target != null && targetMenu.isTargetPlayerArg()) ? 1 : 0;
+                    for (int i = startIndex; i < args.length; i++) {
+                        if (targetMenu.isAllowTargetPlayer() && args[i].toLowerCase().startsWith("-p:")) {
+                            String targetName = args[i].substring(3);
+                            target = resolveTarget(targetName, targetMenu.isAllowOfflineTarget());
                             if (target == null) {
-                                player.sendMessage(Util.parse("&cPlayer '" + targetName + "' not found."));
+                                player.sendMessage(Util.playerNotFound(targetName));
                                 return true;
                             }
                             continue;
                         }
                         if (argIndex < targetMenu.getArgs().size()) {
-                            String sanitized = MiniMessage.miniMessage().escapeTags(arg);
+                            String sanitized = MiniMessage.miniMessage().escapeTags(args[i]);
                             menuArgs.put(targetMenu.getArgs().get(argIndex), sanitized);
                             argIndex++;
                         }
                     }
                     openMenu(player, target, targetMenu, menuArgs);
                     return true;
+                }
+
+                @Override
+                public @NotNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, String @NotNull [] args) {
+                    Menu targetMenu = menuRegistry.findByName(menuName).orElse(null);
+                    if (targetMenu == null) {
+                        return List.of();
+                    }
+                    if (targetMenu.isAllowTargetPlayer() && targetMenu.isTargetPlayerArg() && args.length == 1) {
+                        String prefix = args[0].toLowerCase();
+                        return Bukkit.getOnlinePlayers().stream()
+                                .map(Player::getName)
+                                .filter(name -> name.toLowerCase().startsWith(prefix))
+                                .toList();
+                    }
+                    return List.of();
                 }
             };
             commandMap.register("aumenus", dynamicCmd);

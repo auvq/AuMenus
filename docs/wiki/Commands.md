@@ -29,20 +29,30 @@ Main command: `/aumenus` (alias: `/am`)
 
 Meta types: `STRING`, `INTEGER`, `LONG`, `DOUBLE`, `BOOLEAN`.
 
-## Target Player (`-p:`)
+## Target Player
 
-Menus that have `allow_target_player: true` support the `-p:playername` flag. This opens the menu for the sender, but resolves all PAPI placeholders and `{target}` against the specified player.
+Menus with `allow_target_player: true` can resolve placeholders against a different player. There are two ways to specify the target:
 
+**Direct argument** (requires `target_player_arg: true`):
 ```
-/stats -p:Notch
-/am open stats -p:Steve
+/stats Steve
+/profile Notch
 ```
 
-This is useful for admin menus that show another player's data (balance, stats, etc). The `-p:` flag can appear anywhere in the arguments.
+**Flag** (works with any `allow_target_player` menu):
+```
+/stats -p:Steve
+/am open stats -p:Notch
+```
 
-In the menu title and items, use `{target}` to show the target player's name, or any PAPI placeholder to show their data.
+Both open the menu for the sender, but all PAPI placeholders and `{target}` resolve for the specified player. Tab completion suggests online player names when `target_player_arg` is enabled.
 
-By default, only online players can be targeted. To allow offline players, add `allow_offline_target: true` to the menu config. Note that most PAPI placeholders won't resolve for offline players.
+```yaml
+allow_target_player: true
+target_player_arg: true
+```
+
+By default, only online players can be targeted. Add `allow_offline_target: true` for offline players (most PAPI placeholders won't resolve for them).
 
 ```yaml
 title: 'Stats - {target}'
