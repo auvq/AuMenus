@@ -54,15 +54,6 @@ public final class MenuListener implements Listener {
         if (holder.isUpdating()) {
             return;
         }
-
-        long now = System.currentTimeMillis();
-        long effectiveCooldown = holder.getMenu().getClickCooldown() >= 0
-                ? holder.getMenu().getClickCooldown() * 50L : this.cooldownMs;
-        if (now - holder.getLastClickTime() < effectiveCooldown) {
-            return;
-        }
-        holder.setLastClickTime(now);
-
         if (event.getClickedInventory() != event.getInventory()) {
             return;
         }
@@ -72,6 +63,14 @@ public final class MenuListener implements Listener {
         if (item == null) {
             return;
         }
+
+        long now = System.currentTimeMillis();
+        long effectiveCooldown = holder.getMenu().getClickCooldown() >= 0
+                ? holder.getMenu().getClickCooldown() * 50L : this.cooldownMs;
+        if (now - holder.getLastClickTime() < effectiveCooldown) {
+            return;
+        }
+        holder.setLastClickTime(now);
 
         List<Action> actions = resolveActions(item, event.getClick());
         RequirementList requirements = resolveRequirements(item, event.getClick());

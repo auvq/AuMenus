@@ -43,6 +43,10 @@ public final class MenuCommand {
 
     public static void register(@NotNull Commands registrar, @NotNull AuMenus plugin) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("aumenus")
+                .executes(context -> {
+                    sendHelp(context.getSource().getSender(), plugin);
+                    return 1;
+                })
                 .then(openSubcommand(plugin))
                 .then(listSubcommand(plugin))
                 .then(reloadSubcommand(plugin))
@@ -50,9 +54,27 @@ public final class MenuCommand {
                 .then(createSubcommand(plugin))
                 .then(metaSubcommand(plugin))
                 .then(editorSubcommand(plugin))
-                .then(migrateSubcommand(plugin));
+                .then(migrateSubcommand(plugin))
+                .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("unknown", StringArgumentType.greedyString())
+                        .executes(context -> {
+                            sendHelp(context.getSource().getSender(), plugin);
+                            return 1;
+                        }));
 
         registrar.register(root.build(), "AuMenus main command", List.of("am"));
+    }
+
+    private static void sendHelp(@NotNull CommandSender sender, @NotNull AuMenus plugin) {
+        String version = plugin.getPluginMeta().getVersion();
+        sender.sendMessage(Util.parse("<gold>AuMenus <gray>v" + version));
+        sender.sendMessage(Util.parse("<yellow>/am open <menu> [player] [args] <gray>- Open a menu"));
+        sender.sendMessage(Util.parse("<yellow>/am list <gray>- List loaded menus"));
+        sender.sendMessage(Util.parse("<yellow>/am reload <gray>- Reload all menus"));
+        sender.sendMessage(Util.parse("<yellow>/am execute <player> <action> <gray>- Execute an action"));
+        sender.sendMessage(Util.parse("<yellow>/am create <name> <size> <gray>- Create a new menu"));
+        sender.sendMessage(Util.parse("<yellow>/am editor <menu> <gray>- Open the menu editor"));
+        sender.sendMessage(Util.parse("<yellow>/am meta <player> <operation> ... <gray>- Manage player meta"));
+        sender.sendMessage(Util.parse("<yellow>/am migrate [name] <gray>- Migrate DeluxeMenus configs"));
     }
 
     public static void registerMenuCommands(@NotNull Commands registrar, @NotNull AuMenus plugin) {
@@ -65,10 +87,19 @@ public final class MenuCommand {
             List<String> aliases = menu.getCommandAliases().stream()
                     .map(String::toLowerCase).toList();
 
+            RequiredArgumentBuilder<CommandSourceStack, String> argsBuilder = RequiredArgumentBuilder.<CommandSourceStack, String>argument("args", StringArgumentType.greedyString())
+                    .executes(context -> openMenuFromCommand(context, plugin, menuName));
+
+            if (menu.isAllowTargetPlayer() && menu.isTargetPlayerArg()) {
+                argsBuilder.suggests((context, builder) -> {
+                    Bukkit.getOnlinePlayers().forEach(p -> builder.suggest(p.getName()));
+                    return builder.buildFuture();
+                });
+            }
+
             registrar.register(
                     Commands.literal(menu.getCommand().toLowerCase())
-                            .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("args", StringArgumentType.greedyString())
-                                    .executes(context -> openMenuFromCommand(context, plugin, menuName)))
+                            .then(argsBuilder)
                             .executes(context -> openMenuFromCommand(context, plugin, menuName))
                             .build(),
                     "Opens the " + menuName + " menu",

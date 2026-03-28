@@ -106,6 +106,7 @@ click_require:
 | `string_equals` | `string equals` | `input`, `output` |
 | `string_equals_ignorecase` | `string equals ignorecase` | `input`, `output` |
 | `string_contains` | `string contains` | `input`, `output` |
+| `string_contains_ignorecase` | `string contains ignorecase` | `input`, `output` |
 | `string_length` | `string length` | `input`, `min`, `max` |
 | `regex_matches` | `regex matches` | `input`, `regex` |
 | `==`, `!=`, `>`, `<`, `>=`, `<=` | | `input`, `output` (numeric if parseable, else string) |

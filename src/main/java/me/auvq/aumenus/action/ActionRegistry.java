@@ -5,6 +5,7 @@ import me.auvq.aumenus.menu.Menu;
 import me.auvq.aumenus.menu.MenuHolder;
 import me.auvq.aumenus.util.Util;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -283,22 +284,26 @@ public final class ActionRegistry {
             return value;
         }
 
-        String result = replaceHolderArgs(player, value);
-        result = Util.resolveBuiltInPlaceholders(player, result);
+        MenuHolder holder = plugin.getMenuRegistry().getOpenMenu(player.getUniqueId()).orElse(null);
+        String result = replaceHolderArgs(holder, value);
+
+        if (holder != null) {
+            result = result.replace("{target}", holder.getTargetName());
+        }
+
+        OfflinePlayer placeholderTarget = holder != null ? holder.getPlaceholderTarget() : player;
+        if (placeholderTarget instanceof Player onlineTarget) {
+            result = Util.resolveBuiltInPlaceholders(onlineTarget, result);
+        }
 
         if (plugin.getHookProvider().isPapiEnabled() && result.contains("%")) {
-            result = plugin.getHookProvider().papi().setPlaceholders(player, result);
+            result = plugin.getHookProvider().papi().setPlaceholders(placeholderTarget, result);
         }
         return result;
     }
 
-    private @NotNull String replaceHolderArgs(@NotNull Player player, @NotNull String value) {
-        if (!value.contains("{")) {
-            return value;
-        }
-
-        MenuHolder holder = plugin.getMenuRegistry().getOpenMenu(player.getUniqueId()).orElse(null);
-        if (holder == null) {
+    private @NotNull String replaceHolderArgs(@Nullable MenuHolder holder, @NotNull String value) {
+        if (holder == null || !value.contains("{")) {
             return value;
         }
 

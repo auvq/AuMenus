@@ -330,27 +330,34 @@ Values: `COMMON`, `UNCOMMON`, `RARE`, `EPIC`.
 
 ### model_data
 
-Custom model data integer for resource packs.
+Custom model data value for resource packs. This is the same as Bukkit's `CustomModelData` component. If your resource pack assigns a custom model to an item at a specific model data number, set it here and the item will display that model.
 
 ```yaml
+material: DIAMOND_SWORD
 model_data: 12345
 ```
 
+This works with any resource pack that uses custom model data. The number must match what your pack defines.
+
 ### item_model
 
-Custom item model key (1.21.2+).
+Custom item model key using Minecraft's 1.21.2+ item model system. This is a namespaced key pointing to a model defined in a resource pack under `assets/<namespace>/models/item/`.
 
 ```yaml
 item_model: "myplugin:custom_sword"
 ```
 
+This is the newer alternative to model_data. If your resource pack uses the 1.21.2+ item model format, use this instead of model_data. Only works on Paper 1.21.2+.
+
 ### tooltip_style
 
-Custom tooltip style key (1.21.2+).
+Custom tooltip background style (1.21.2+). A namespaced key pointing to a tooltip style defined in your resource pack.
 
 ```yaml
 tooltip_style: "myplugin:rare_tooltip"
 ```
+
+Only works on Paper 1.21.2+.
 
 ### light_level
 
@@ -488,3 +495,41 @@ items:
       money: 100
       deny: "&cYou need $100! Missing: ${remaining}"
 ```
+
+---
+
+## config.yml
+
+The main plugin config at `plugins/AuMenus/config.yml`.
+
+```yaml
+# Enable debug logging
+debug: false
+
+# Check for updates on startup
+check_updates: true
+
+# Default placeholder refresh interval (ticks) for menus without update_interval
+default_update_interval: 20
+
+# Global click cooldown in ticks (2 = 100ms)
+click_cooldown: 2
+
+# Global defaults for target player (can be overridden per menu)
+default_allow_target_player: false
+default_allow_offline_target: false
+
+# Configurable messages (MiniMessage supported)
+messages:
+  player_not_found: "&cPlayer '{player}' not found."
+```
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `debug` | `false` | Enables debug logging to console |
+| `check_updates` | `true` | Checks for new versions on startup |
+| `default_update_interval` | `20` | Default placeholder refresh rate in ticks |
+| `click_cooldown` | `2` | Global click cooldown in ticks |
+| `default_allow_target_player` | `false` | Global default for target player support |
+| `default_allow_offline_target` | `false` | Global default for offline target support |
+| `messages.player_not_found` | `&cPlayer '{player}' not found.` | Message when target player isn't found. Use `{player}` for the name |

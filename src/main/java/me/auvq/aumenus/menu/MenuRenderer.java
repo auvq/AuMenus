@@ -103,8 +103,15 @@ public final class MenuRenderer {
     private @Nullable MenuItem resolveItem(@NotNull Player player,
                                             @NotNull List<MenuItem> candidates,
                                             @NotNull MenuHolder holder) {
+        MenuItem fallback = null;
+        boolean hasConditionalItems = candidates.stream().anyMatch(i -> i.getViewRequire() != null);
+
         for (MenuItem item : candidates) {
             if (item.getViewRequire() == null) {
+                if (hasConditionalItems) {
+                    fallback = item;
+                    continue;
+                }
                 return item;
             }
             RequirementList resolved = resolveRequirementPlaceholders(item.getViewRequire(), player, holder);
@@ -112,7 +119,7 @@ public final class MenuRenderer {
                 return item;
             }
         }
-        return null;
+        return fallback;
     }
 
     public @NotNull RequirementList resolveRequirementPlaceholders(@NotNull RequirementList list,

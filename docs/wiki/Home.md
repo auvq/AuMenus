@@ -11,6 +11,7 @@ Lightweight, open-source GUI menu plugin for Paper & Folia 1.21.1+.
 - [Pagination](Pagination) - Multi-page menus
 - [Commands](Commands) - All commands and permissions
 - [In-Game Editor](Editor) - Visual menu editing
+- [Hooks](Hooks) - Vault, PlaceholderAPI, HeadDatabase, ItemsAdder, Oraxen, Nexo
 - [Migration](Migration) - Migrating from DeluxeMenus
 - [Developer API](API) - Custom actions, requirements, and events
 - [FAQ](FAQ) - Common questions

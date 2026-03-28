@@ -22,6 +22,7 @@ import me.auvq.aumenus.menu.MenuRenderer;
 import me.auvq.aumenus.meta.MetaStore;
 import me.auvq.aumenus.requirement.RequirementList;
 import me.auvq.aumenus.requirement.RequirementRegistry;
+import me.auvq.aumenus.util.UpdateChecker;
 import me.auvq.aumenus.util.Util;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bstats.bukkit.Metrics;
@@ -106,6 +107,12 @@ public final class AuMenus extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(
                 new MenuListener(this, actionRegistry, requirementRegistry), this);
         Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
+
+        if (getConfig().getBoolean("check_updates", true)) {
+            UpdateChecker updateChecker = new UpdateChecker(this);
+            updateChecker.check();
+            Bukkit.getPluginManager().registerEvents(updateChecker, this);
+        }
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
 

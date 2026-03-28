@@ -13,6 +13,7 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.MenuType;
@@ -74,6 +75,15 @@ public final class AnvilInput {
                                               @Nullable Map<String, Object> requireConfig) {
         return new Listener() {
             private boolean submitted = false;
+
+            @EventHandler
+            public void onPrepare(PrepareAnvilEvent event) {
+                AnvilView preparedView = event.getView();
+                if (preparedView != anvilView) {
+                    return;
+                }
+                preparedView.setRepairCost(0);
+            }
 
             @EventHandler
             public void onClick(InventoryClickEvent event) {

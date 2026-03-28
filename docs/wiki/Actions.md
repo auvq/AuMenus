@@ -55,6 +55,9 @@ on_click:
 | `sound` | | Play sound. Optional volume and pitch space-separated. |
 | `broadcast_sound` | `broadcastsound` | Play sound for all players |
 | `broadcast_sound_world` | `broadcastsoundworld` | Play sound for players in same world |
+| `rawsound` | | Play a custom sound by resource key. Format: `key volume pitch` |
+| `broadcast_rawsound` | `broadcastrawsound` | Play custom sound for all players |
+| `broadcast_rawsound_world` | `broadcastrawsoundworld` | Play custom sound for players in same world |
 | `connect` | | Send player to BungeeCord/Velocity server |
 | `meta` | | Manipulate persistent player data |
 | `placeholder` | | Evaluate a PAPI placeholder (triggers expansion side effects) |

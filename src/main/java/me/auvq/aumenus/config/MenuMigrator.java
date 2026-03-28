@@ -347,8 +347,14 @@ public final class MenuMigrator {
         String value = action;
         boolean matched = false;
 
+        if (action.equals("[message]")) {
+            type = "msg";
+            value = " ";
+            matched = true;
+        }
+
         for (Map.Entry<String, String> entry : DM_ACTION_PREFIXES.entrySet()) {
-            if (action.startsWith(entry.getKey())) {
+            if (!matched && action.startsWith(entry.getKey())) {
                 type = entry.getValue();
                 value = action.substring(entry.getKey().length());
                 matched = true;
