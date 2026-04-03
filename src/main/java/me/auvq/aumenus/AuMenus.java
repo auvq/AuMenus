@@ -19,9 +19,11 @@ import me.auvq.aumenus.menu.MenuHolder;
 import me.auvq.aumenus.item.HeadProvider;
 import me.auvq.aumenus.menu.MenuRegistry;
 import me.auvq.aumenus.menu.MenuRenderer;
+import me.auvq.aumenus.requirement.Requirement;
 import me.auvq.aumenus.meta.MetaStore;
 import me.auvq.aumenus.requirement.RequirementList;
 import me.auvq.aumenus.requirement.RequirementRegistry;
+import me.auvq.aumenus.requirement.RequirementType;
 import me.auvq.aumenus.util.UpdateChecker;
 import me.auvq.aumenus.util.Util;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -36,6 +38,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public final class AuMenus extends JavaPlugin {
 
@@ -76,6 +81,9 @@ public final class AuMenus extends JavaPlugin {
     @Getter
     private final Map<UUID, String> previousMenus = new ConcurrentHashMap<>();
 
+    private ScheduledTask globalUpdateTask;
+    private ScheduledTask globalAnimationTask;
+
     @Override
     public void onEnable() {
         instance = this;
@@ -94,6 +102,7 @@ public final class AuMenus extends JavaPlugin {
         this.chatInput = new ChatInput(this);
         this.menuMigrator = new MenuMigrator(this);
         new File(getDataFolder(), "migration").mkdirs();
+        new File(getDataFolder(), "templates").mkdirs();
         saveDefaultMenus();
 
         int loaded = menuLoader.loadAll();
@@ -114,6 +123,8 @@ public final class AuMenus extends JavaPlugin {
             Bukkit.getPluginManager().registerEvents(updateChecker, this);
         }
 
+        startGlobalTasks();
+
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
 
         //noinspection UnstableApiUsage
@@ -130,8 +141,18 @@ public final class AuMenus extends JavaPlugin {
     @Override
     public void onDisable() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            menuRegistry.getOpenMenu(player.getUniqueId()).ifPresent(MenuHolder::stopUpdateTask);
+            menuRegistry.getOpenMenu(player.getUniqueId()).ifPresent(holder -> {
+                holder.stopUpdateTask();
+                holder.stopAnimationTask();
+            });
             player.closeInventory();
+        }
+
+        if (globalUpdateTask != null) {
+            globalUpdateTask.cancel();
+        }
+        if (globalAnimationTask != null) {
+            globalAnimationTask.cancel();
         }
 
         getServer().getMessenger().unregisterOutgoingPluginChannel(this, "BungeeCord");
@@ -139,12 +160,45 @@ public final class AuMenus extends JavaPlugin {
     }
 
     public void openMenu(@NotNull Player player, @NotNull Menu menu, @NotNull Map<String, String> args) {
-        openMenu(player, null, menu, args);
+        openMenu(player, null, menu, args, 0);
     }
 
     public void openMenu(@NotNull Player player, @Nullable OfflinePlayer target, @NotNull Menu menu,
                           @NotNull Map<String, String> args) {
+        openMenu(player, target, menu, args, 0);
+    }
+
+    private static final int MAX_PREDICATE_DEPTH = 5;
+
+    private void openMenu(@NotNull Player player, @Nullable OfflinePlayer target, @NotNull Menu menu,
+                           @NotNull Map<String, String> args, int predicateDepth) {
         if (!player.isOnline()) {
+            return;
+        }
+
+        if (menu.getPredicateType() != null && menu.getPredicatePass() != null
+                && menu.getPredicateFail() != null) {
+            if (predicateDepth >= MAX_PREDICATE_DEPTH) {
+                getLogger().warning("Predicate menu chain exceeded max depth for menu '" + menu.getName() + "'");
+                return;
+            }
+
+            Requirement predReq = Requirement.builder()
+                    .name("predicate")
+                    .type(menu.getPredicateType())
+                    .config(menu.getPredicateConfig() != null ? menu.getPredicateConfig() : Map.of())
+                    .denyActions(List.of())
+                    .successActions(List.of())
+                    .build();
+
+            boolean passed = requirementRegistry.evaluate(player, predReq);
+            String targetMenuName = passed ? menu.getPredicatePass() : menu.getPredicateFail();
+            Menu targetMenu = menuRegistry.findByName(targetMenuName).orElse(null);
+            if (targetMenu == null) {
+                getLogger().warning("Predicate menu '" + menu.getName() + "' references unknown menu '" + targetMenuName + "'");
+                return;
+            }
+            openMenu(player, target, targetMenu, args, predicateDepth + 1);
             return;
         }
 
@@ -181,6 +235,7 @@ public final class AuMenus extends JavaPlugin {
         player.getScheduler().run(this, task -> {
             player.openInventory(holder.getInventory());
             holder.startUpdateTask(this);
+            holder.startAnimationTask(this);
 
             if (!menu.getOnOpen().isEmpty()) {
                 actionRegistry.executeActions(player, menu.getOnOpen());
@@ -192,11 +247,13 @@ public final class AuMenus extends JavaPlugin {
         Map<UUID, MenuHolder> snapshot = new HashMap<>(menuRegistry.getOpenMenus());
         for (Map.Entry<UUID, MenuHolder> entry : snapshot.entrySet()) {
             entry.getValue().stopUpdateTask();
+            entry.getValue().stopAnimationTask();
             entry.getValue().setReloading(true);
         }
 
         menuRegistry.clear();
         HeadProvider.clearCache();
+        RequirementType.clearCache();
         reloadConfig();
         int loaded = menuLoader.loadAll();
         getLogger().info("Reloaded " + loaded + " menu(s).");
@@ -224,11 +281,12 @@ public final class AuMenus extends JavaPlugin {
                     || newMenu.getInventoryType() != holder.getMenu().getInventoryType()) {
                 player.closeInventory();
             }
-            MenuHolder newHolder = new MenuHolder(newMenu, player, holder.getArguments());
+            MenuHolder newHolder = new MenuHolder(newMenu, player, holder.getTarget(), holder.getArguments());
             menuRenderer.render(newHolder);
             menuRegistry.trackOpen(player.getUniqueId(), newHolder);
             player.openInventory(newHolder.getInventory());
             newHolder.startUpdateTask(this);
+            newHolder.startAnimationTask(this);
         }, null);
     }
 
@@ -318,6 +376,48 @@ public final class AuMenus extends JavaPlugin {
         return null;
     }
 
+    private void startGlobalTasks() {
+        globalUpdateTask = Bukkit.getAsyncScheduler().runAtFixedRate(this, task -> {
+            long now = System.currentTimeMillis();
+            for (Map.Entry<UUID, MenuHolder> entry : menuRegistry.getOpenMenus().entrySet()) {
+                MenuHolder holder = entry.getValue();
+                if (holder.getMenu().getUpdateInterval() <= 0) {
+                    continue;
+                }
+                long intervalMs = holder.getMenu().getUpdateInterval() * 50L;
+                if (now - holder.getLastUpdateTime() < intervalMs) {
+                    continue;
+                }
+                Player player = Bukkit.getPlayer(entry.getKey());
+                if (player == null || !player.isOnline()) {
+                    continue;
+                }
+                holder.setLastUpdateTime(now);
+                player.getScheduler().run(this, t -> {
+                    menuRenderer.refreshUpdatableItems(holder);
+                    if (holder.getMenu().isDynamicTitle()) {
+                        holder.updateTitle(player);
+                    }
+                }, null);
+            }
+        }, 1, 1, TimeUnit.SECONDS);
+
+        globalAnimationTask = Bukkit.getAsyncScheduler().runAtFixedRate(this, task -> {
+            for (Map.Entry<UUID, MenuHolder> entry : menuRegistry.getOpenMenus().entrySet()) {
+                MenuHolder holder = entry.getValue();
+                if (!holder.hasAnimatedItems()) {
+                    continue;
+                }
+                Player player = Bukkit.getPlayer(entry.getKey());
+                if (player == null || !player.isOnline()) {
+                    continue;
+                }
+                player.getScheduler().run(this, t ->
+                        menuRenderer.refreshAnimatedItems(holder), null);
+            }
+        }, 100, 100, TimeUnit.MILLISECONDS);
+    }
+
     public void registerMenuCommands() {
         CommandMap commandMap = Bukkit.getCommandMap();
 
@@ -351,7 +451,7 @@ public final class AuMenus extends JavaPlugin {
                 @Override
                 public boolean execute(@NotNull CommandSender sender, @NotNull String label, String @NotNull [] args) {
                     if (!(sender instanceof Player player)) {
-                        sender.sendMessage(Util.parse("&cOnly players can use this command."));
+                        sender.sendMessage(Util.parse("<red>Only players can use this command."));
                         return true;
                     }
                     Menu targetMenu = menuRegistry.findByName(menuName).orElse(null);

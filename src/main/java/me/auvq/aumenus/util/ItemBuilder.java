@@ -7,6 +7,7 @@ import me.auvq.aumenus.hook.NexoHook;
 import me.auvq.aumenus.hook.OraxenHook;
 import me.auvq.aumenus.item.HeadProvider;
 import me.auvq.aumenus.item.MenuItem;
+import me.auvq.aumenus.item.MenuItemFrame;
 import me.auvq.aumenus.menu.MenuHolder;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
@@ -82,6 +83,95 @@ public final class ItemBuilder {
             plugin.getLogger().warning("Failed to build item '" + item.getName() + "': " + e.getMessage());
             return Util.buildErrorItem(item.getName(), e.getMessage());
         }
+    }
+
+    public @NotNull ItemStack buildFrameItemStack(@NotNull Player player,
+                                                  @NotNull MenuItem item,
+                                                  @NotNull MenuItemFrame frame,
+                                                  @NotNull MenuHolder holder) {
+        if (item.hasError()) {
+            return Util.buildErrorItem(item.getName(), item.getErrorMessage());
+        }
+
+        try {
+            return buildFrameInternal(player, item, frame, holder);
+        } catch (RuntimeException e) {
+            plugin.getLogger().warning("Failed to build animated frame for '" + item.getName() + "': " + e.getMessage());
+            return Util.buildErrorItem(item.getName(), e.getMessage());
+        }
+    }
+
+    private @NotNull ItemStack buildFrameInternal(@NotNull Player player,
+                                                   @NotNull MenuItem item,
+                                                   @NotNull MenuItemFrame frame,
+                                                   @NotNull MenuHolder holder) {
+        String materialStr = frame.getMaterial() != null
+                ? resolve(player, frame.getMaterial(), holder)
+                : resolve(player, item.getMaterial(), holder);
+        ItemStack stack = resolveMaterial(materialStr, player);
+
+        int amount = frame.getAmount() != null ? frame.getAmount() : item.getAmount();
+        if (item.getDynamicAmount() != null && frame.getAmount() == null) {
+            String resolved = resolve(player, item.getDynamicAmount(), holder);
+            try {
+                amount = Integer.parseInt(resolved);
+            } catch (NumberFormatException e) {
+                plugin.getLogger().warning("Invalid dynamic amount '" + resolved + "' for item '" + item.getName() + "'");
+            }
+        }
+        stack.setAmount(Math.max(1, Math.min(64, amount)));
+
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) {
+            return stack;
+        }
+
+        MenuItem merged = mergeFrameIntoItem(item, frame);
+        applyDisplayProperties(meta, merged, player, holder);
+        applyEnchantments(meta, merged);
+        applyItemFlags(meta, merged);
+        applyMiscProperties(meta, merged);
+        applyColorProperties(meta, merged);
+        applyBannerProperties(meta, item);
+        applyPotionProperties(meta, item);
+        applyArmorTrimProperties(meta, item);
+
+        stack.setItemMeta(meta);
+        return stack;
+    }
+
+    private @NotNull MenuItem mergeFrameIntoItem(@NotNull MenuItem item, @NotNull MenuItemFrame frame) {
+        return MenuItem.builder()
+                .name(item.getName())
+                .material(frame.getMaterial() != null ? frame.getMaterial() : item.getMaterial())
+                .displayName(frame.getDisplayName() != null ? frame.getDisplayName() : item.getDisplayName())
+                .lore(frame.getLore() != null ? frame.getLore() : item.getLore())
+                .amount(frame.getAmount() != null ? frame.getAmount() : item.getAmount())
+                .dynamicAmount(item.getDynamicAmount())
+                .slots(item.getSlots())
+                .priority(item.getPriority())
+                .configOrder(item.getConfigOrder())
+                .update(item.isUpdate())
+                .enchantments(frame.getEnchantments() != null ? frame.getEnchantments() : item.getEnchantments())
+                .enchantmentGlintOverride(frame.getEnchantmentGlintOverride() != null
+                        ? frame.getEnchantmentGlintOverride() : item.getEnchantmentGlintOverride())
+                .hideTooltip(frame.getHideTooltip() != null ? frame.getHideTooltip() : item.getHideTooltip())
+                .rarity(frame.getRarity() != null ? frame.getRarity() : item.getRarity())
+                .itemFlags(frame.getItemFlags() != null ? frame.getItemFlags() : item.getItemFlags())
+                .unbreakable(frame.getUnbreakable() != null ? frame.getUnbreakable() : item.isUnbreakable())
+                .modelData(frame.getModelData() != null ? frame.getModelData() : item.getModelData())
+                .itemModel(frame.getItemModel() != null ? frame.getItemModel() : item.getItemModel())
+                .tooltipStyle(frame.getTooltipStyle() != null ? frame.getTooltipStyle() : item.getTooltipStyle())
+                .rgb(frame.getRgb() != null ? frame.getRgb() : item.getRgb())
+                .damage(frame.getDamage() != null ? frame.getDamage() : item.getDamage())
+                .bannerMeta(item.getBannerMeta())
+                .baseColor(item.getBaseColor())
+                .lightLevel(item.getLightLevel())
+                .trimMaterial(item.getTrimMaterial())
+                .trimPattern(item.getTrimPattern())
+                .potionEffects(item.getPotionEffects())
+                .loreAppendMode(item.getLoreAppendMode())
+                .build();
     }
 
     private @NotNull ItemStack buildItemInternal(@NotNull Player player,
@@ -400,7 +490,7 @@ public final class ItemBuilder {
 
     private @NotNull ItemStack resolveMaterial(@NotNull String materialStr, @NotNull Player player) {
         if (materialStr.startsWith("head-")) {
-            return HeadProvider.createPlayerHead(materialStr.substring(5)).clone();
+            return HeadProvider.createPlayerHead(materialStr.substring(5));
         }
         if (materialStr.startsWith("basehead-")) {
             return HeadProvider.createBase64Head(materialStr.substring(9)).clone();

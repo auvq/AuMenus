@@ -9,19 +9,26 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class MetaStore {
 
     private final AuMenus plugin;
+    private final Map<String, NamespacedKey> keyCache = new HashMap<>();
 
     public MetaStore(@NotNull AuMenus plugin) {
         this.plugin = plugin;
     }
 
+    private @NotNull NamespacedKey key(@NotNull String key) {
+        return keyCache.computeIfAbsent(key, k -> new NamespacedKey(plugin, k));
+    }
+
     public void set(@NotNull Player player, @NotNull String key, @NotNull String type, @NotNull String value) {
         PersistentDataContainer pdc = player.getPersistentDataContainer();
-        NamespacedKey nsKey = new NamespacedKey(plugin, key);
+        NamespacedKey nsKey = key(key);
 
         try {
             switch (type.toUpperCase()) {
@@ -44,7 +51,7 @@ public final class MetaStore {
     }
 
     public void remove(@NotNull Player player, @NotNull String key) {
-        NamespacedKey nsKey = new NamespacedKey(plugin, key);
+        NamespacedKey nsKey = key(key);
         player.getPersistentDataContainer().remove(nsKey);
     }
 
@@ -83,7 +90,7 @@ public final class MetaStore {
     public @NotNull String get(@NotNull Player player, @NotNull String key,
                                 @NotNull String type, @NotNull String defaultValue) {
         PersistentDataContainer pdc = player.getPersistentDataContainer();
-        NamespacedKey nsKey = new NamespacedKey(plugin, key);
+        NamespacedKey nsKey = key(key);
 
         try {
             return switch (type.toUpperCase()) {
@@ -113,7 +120,7 @@ public final class MetaStore {
 
     public @Nullable String getAuto(@NotNull Player player, @NotNull String key) {
         PersistentDataContainer pdc = player.getPersistentDataContainer();
-        NamespacedKey nsKey = new NamespacedKey(plugin, key);
+        NamespacedKey nsKey = key(key);
         return autoDetectGet(pdc, nsKey, null);
     }
 
@@ -165,7 +172,7 @@ public final class MetaStore {
     }
 
     public boolean hasValue(@NotNull Player player, @NotNull String key, @Nullable String type) {
-        NamespacedKey nsKey = new NamespacedKey(plugin, key);
+        NamespacedKey nsKey = key(key);
         PersistentDataContainer pdc = player.getPersistentDataContainer();
         if (type == null) {
             return pdc.has(nsKey);

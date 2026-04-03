@@ -65,8 +65,9 @@ public final class MenuListener implements Listener {
         }
 
         long now = System.currentTimeMillis();
-        long effectiveCooldown = holder.getMenu().getClickCooldown() >= 0
+        long configuredCooldown = holder.getMenu().getClickCooldown() >= 0
                 ? holder.getMenu().getClickCooldown() * 50L : this.cooldownMs;
+        long effectiveCooldown = Math.max(100L, configuredCooldown);
         if (now - holder.getLastClickTime() < effectiveCooldown) {
             return;
         }
@@ -85,7 +86,7 @@ public final class MenuListener implements Listener {
                 return;
             }
             handlePerCheckDeny(player, result.failedOptional());
-            handleSuccessActions(player, resolved, result.passed_list());
+            handleSuccessActions(player, resolved, result.passedList());
         }
 
         if (!actions.isEmpty()) {
@@ -110,6 +111,7 @@ public final class MenuListener implements Listener {
         }
 
         holder.stopUpdateTask();
+        holder.stopAnimationTask();
         MenuHolder current = plugin.getMenuRegistry().getOpenMenu(player.getUniqueId()).orElse(null);
         if (current == holder) {
             plugin.getMenuRegistry().trackClose(player.getUniqueId());

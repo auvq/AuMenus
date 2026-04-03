@@ -460,6 +460,62 @@ view_require:
 
 ---
 
+## Templates
+
+Templates let you define a reusable item layout once, then use it across menus with different values. Template files go in `plugins/AuMenus/templates/`.
+
+### Template file
+
+`plugins/AuMenus/templates/shop_item.yml`:
+
+```yaml
+material: '{material}'
+name: '{name}'
+lore:
+- ''
+- '<white>Price: <gold>${price}'
+- ''
+- '<yellow>Click to purchase'
+on_click:
+- take_money: '{price}'
+- console: 'give %player_name% {material} 1'
+- msg: '<green>Purchased!'
+- sound: entity.experience_orb.pickup
+- refresh: ''
+click_require:
+  type: has_money
+  amount: '{price}'
+  deny: '<red>You need ${price}!'
+```
+
+### Using a template
+
+In your menu config, reference the template and fill in variables:
+
+```yaml
+items:
+  diamond:
+    template: shop_item
+    slot: 10
+    variables:
+      material: DIAMOND
+      name: '<aqua>ᴅɪᴀᴍᴏɴᴅ'
+      price: '500'
+  emerald:
+    template: shop_item
+    slot: 11
+    variables:
+      material: EMERALD
+      name: '<green>ᴇᴍᴇʀᴀʟᴅ'
+      price: '300'
+```
+
+Any key you set on the item (like `slot`) overrides the template. The `{variable}` placeholders in the template are replaced with your values before parsing.
+
+Templates work with regular items and page_items.
+
+---
+
 ## Complete Menu Example
 
 ```yaml

@@ -158,7 +158,7 @@ public final class MenuCommand {
                         }
                     }
                     if (target == null) {
-                        player.sendMessage(Util.parse("&cPlayer '" + targetName + "' not found."));
+                        player.sendMessage(Util.parse("<red>Player '" + targetName + "' not found."));
                         return 0;
                     }
                     continue;
@@ -170,6 +170,7 @@ public final class MenuCommand {
                 }
             }
         } catch (IllegalArgumentException ignored) {
+            // Brigadier throws when "args" argument was not provided; no args is valid
         }
 
         plugin.openMenu(player, target, menu, menuArgs);
@@ -211,7 +212,7 @@ public final class MenuCommand {
 
         Menu menu = plugin.getMenuRegistry().findByName(menuName).orElse(null);
         if (menu == null) {
-            sender.sendMessage(Util.parse("&cMenu '" + menuName + "' not found."));
+            sender.sendMessage(Util.parse("<red>Menu '" + menuName + "' not found."));
             return 0;
         }
 
@@ -225,7 +226,7 @@ public final class MenuCommand {
         } else if (sender instanceof Player player) {
             target = player;
         } else {
-            sender.sendMessage(Util.parse("&cSpecify a player when running from console."));
+            sender.sendMessage(Util.parse("<red>Specify a player when running from console."));
             return 0;
         }
 
@@ -238,11 +239,12 @@ public final class MenuCommand {
                 args.put(menu.getArgs().get(i), sanitized);
             }
         } catch (IllegalArgumentException ignored) {
+            // Brigadier throws when "args" argument was not provided; no args is valid
         }
 
         plugin.openMenu(target, menu, args);
         if (sender != target) {
-            sender.sendMessage(Util.parse("&aOpened menu '" + menuName + "' for " + target.getName() + "."));
+            sender.sendMessage(Util.parse("<green>Opened menu '" + menuName + "' for " + target.getName() + "."));
         }
         return 1;
     }
@@ -253,14 +255,14 @@ public final class MenuCommand {
                 .executes(context -> {
                     CommandSender sender = context.getSource().getSender();
                     if (plugin.getMenuRegistry().size() == 0) {
-                        sender.sendMessage(Util.parse("&7No menus loaded."));
+                        sender.sendMessage(Util.parse("<gray>No menus loaded."));
                         return 1;
                     }
-                    sender.sendMessage(Util.parse("&6AuMenus &7- &fLoaded menus:"));
+                    sender.sendMessage(Util.parse("<gold>AuMenus <gray>- <white>Loaded menus:"));
                     for (Menu menu : plugin.getMenuRegistry().all()) {
-                        String cmd = menu.getCommand() != null ? " &7(/" + menu.getCommand() + ")" : "";
-                        String errors = menu.hasErrors() ? " &c[" + menu.getLoadErrors().size() + " errors]" : "";
-                        sender.sendMessage(Util.parse("&7 - &e" + menu.getName() + cmd + errors));
+                        String cmd = menu.getCommand() != null ? " <gray>(/" + menu.getCommand() + ")" : "";
+                        String errors = menu.hasErrors() ? " <red>[" + menu.getLoadErrors().size() + " errors]" : "";
+                        sender.sendMessage(Util.parse("<gray> - <yellow>" + menu.getName() + cmd + errors));
                     }
                     return 1;
                 });
@@ -273,7 +275,7 @@ public final class MenuCommand {
                     CommandSender sender = context.getSource().getSender();
                     Bukkit.getGlobalRegionScheduler().run(plugin, task -> {
                         plugin.reloadMenus();
-                        sender.sendMessage(Util.parse("&aAuMenus reloaded. "
+                        sender.sendMessage(Util.parse("<green>AuMenus reloaded. "
                                 + plugin.getMenuRegistry().size() + " menu(s) loaded."));
                     });
                     return 1;
@@ -316,7 +318,7 @@ public final class MenuCommand {
         target.getScheduler().run(plugin, task -> {
             plugin.getActionRegistry().executeSingle(target, action);
         }, null);
-        sender.sendMessage(Util.parse("&aExecuted action for " + target.getName() + "."));
+        sender.sendMessage(Util.parse("<green>Executed action for " + target.getName() + "."));
         return 1;
     }
 
@@ -335,18 +337,18 @@ public final class MenuCommand {
         int size = IntegerArgumentType.getInteger(context, "size");
 
         if (size % 9 != 0) {
-            sender.sendMessage(Util.parse("&cSize must be a multiple of 9 (e.g. 9, 18, 27, 36, 45, 54)."));
+            sender.sendMessage(Util.parse("<red>Size must be a multiple of 9 (e.g. 9, 18, 27, 36, 45, 54)."));
             return 0;
         }
 
         if (plugin.getMenuRegistry().findByName(name).isPresent()) {
-            sender.sendMessage(Util.parse("&cMenu '" + name + "' already exists."));
+            sender.sendMessage(Util.parse("<red>Menu '" + name + "' already exists."));
             return 0;
         }
 
         File menuFile = new File(plugin.getDataFolder(), "menus/" + name + ".yml");
         if (menuFile.exists()) {
-            sender.sendMessage(Util.parse("&cFile '" + name + ".yml' already exists."));
+            sender.sendMessage(Util.parse("<red>File '" + name + ".yml' already exists."));
             return 0;
         }
 
@@ -358,18 +360,18 @@ public final class MenuCommand {
         try {
             config.save(menuFile);
         } catch (IOException e) {
-            sender.sendMessage(Util.parse("&cFailed to create menu file: " + e.getMessage()));
+            sender.sendMessage(Util.parse("<red>Failed to create menu file: " + e.getMessage()));
             return 0;
         }
 
         Menu menu = plugin.getMenuLoader().loadMenu(menuFile);
         if (menu == null) {
-            sender.sendMessage(Util.parse("&cFailed to load menu file after creation."));
+            sender.sendMessage(Util.parse("<red>Failed to load menu file after creation."));
             return 0;
         }
         plugin.getMenuRegistry().register(menu);
 
-        sender.sendMessage(Util.parse("&aCreated menu '" + name + "' (" + size + " slots)."));
+        sender.sendMessage(Util.parse("<green>Created menu '" + name + "' (" + size + " slots)."));
 
         if (sender instanceof Player player) {
             plugin.getMenuEditor().openEditor(player, name, size);
@@ -421,7 +423,7 @@ public final class MenuCommand {
         String operation = StringArgumentType.getString(context, "operation");
 
         if (!operation.equalsIgnoreCase("list")) {
-            sender.sendMessage(Util.parse("&cUsage: /aumenus meta <player> <operation> <key> <type> [value]"));
+            sender.sendMessage(Util.parse("<red>Usage: /aumenus meta <player> <operation> <key> <type> [value]"));
             return 0;
         }
 
@@ -431,10 +433,10 @@ public final class MenuCommand {
             return 0;
         }
 
-        sender.sendMessage(Util.parse("&6Meta keys for &e" + target.getName() + "&6:"));
+        sender.sendMessage(Util.parse("<gold>Meta keys for <yellow>" + target.getName() + "<gold>:"));
         target.getPersistentDataContainer().getKeys().stream()
                 .filter(key -> key.getNamespace().equals(plugin.getName().toLowerCase()))
-                .forEach(key -> sender.sendMessage(Util.parse("&7 - &e" + key.getKey())));
+                .forEach(key -> sender.sendMessage(Util.parse("<gray> - <yellow>" + key.getKey())));
         return 1;
     }
 
@@ -454,37 +456,37 @@ public final class MenuCommand {
         }
 
         if (!META_TYPES.contains(type)) {
-            sender.sendMessage(Util.parse("&cUnknown type '" + type + "'. Valid: " + String.join(", ", META_TYPES)));
+            sender.sendMessage(Util.parse("<red>Unknown type '" + type + "'. Valid: " + String.join(", ", META_TYPES)));
             return 0;
         }
 
         switch (operation) {
             case "remove" -> {
                 plugin.getMetaStore().remove(target, key);
-                sender.sendMessage(Util.parse("&aRemoved meta key '" + key + "' from " + target.getName() + "."));
+                sender.sendMessage(Util.parse("<green>Removed meta key '" + key + "' from " + target.getName() + "."));
             }
             case "switch" -> {
                 plugin.getMetaStore().executeMetaAction(target, "switch " + key);
-                sender.sendMessage(Util.parse("&aSwitched boolean meta '" + key + "' for " + target.getName() + "."));
+                sender.sendMessage(Util.parse("<green>Switched boolean meta '" + key + "' for " + target.getName() + "."));
             }
             case "get" -> {
                 String result = plugin.getMetaStore().getAuto(target, key);
                 if (result == null) {
-                    sender.sendMessage(Util.parse("&6" + target.getName() + " &7[" + key + "] &f= &cnot set"));
+                    sender.sendMessage(Util.parse("<gold>" + target.getName() + " <gray>[" + key + "] <white>= <red>not set"));
                 } else {
-                    sender.sendMessage(Util.parse("&6" + target.getName() + " &7[" + key + "] &f= &e" + result));
+                    sender.sendMessage(Util.parse("<gold>" + target.getName() + " <gray>[" + key + "] <white>= <yellow>" + result));
                 }
             }
             case "set", "add", "subtract" -> {
                 if (value == null) {
-                    sender.sendMessage(Util.parse("&cUsage: /aumenus meta <player> " + operation + " <key> <type> <value>"));
+                    sender.sendMessage(Util.parse("<red>Usage: /aumenus meta <player> " + operation + " <key> <type> <value>"));
                     return 0;
                 }
                 plugin.getMetaStore().executeMetaAction(target, operation + " " + key + " " + type + " " + value);
-                sender.sendMessage(Util.parse("&aExecuted meta " + operation + " on '" + key + "' for " + target.getName() + "."));
+                sender.sendMessage(Util.parse("<green>Executed meta " + operation + " on '" + key + "' for " + target.getName() + "."));
             }
             default -> {
-                sender.sendMessage(Util.parse("&cUnknown operation '" + operation + "'. Valid: set, remove, add, subtract, switch, get, list"));
+                sender.sendMessage(Util.parse("<red>Unknown operation '" + operation + "'. Valid: set, remove, add, subtract, switch, get, list"));
                 return 0;
             }
         }
@@ -508,7 +510,7 @@ public final class MenuCommand {
         CommandSender sender = context.getSource().getSender();
 
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(Util.parse("&cThis command can only be run by a player."));
+            sender.sendMessage(Util.parse("<red>This command can only be run by a player."));
             return 0;
         }
 
@@ -516,7 +518,7 @@ public final class MenuCommand {
         Menu menu = plugin.getMenuRegistry().findByName(menuName).orElse(null);
 
         if (menu == null) {
-            sender.sendMessage(Util.parse("&cMenu '" + menuName + "' not found."));
+            sender.sendMessage(Util.parse("<red>Menu '" + menuName + "' not found."));
             return 0;
         }
 

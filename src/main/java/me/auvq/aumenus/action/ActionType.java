@@ -17,8 +17,9 @@ import java.util.List;
 public enum ActionType {
 
     PLAYER(List.of("player", "p"), (player, value) -> {
+        String cmd = value.startsWith("/") ? value : "/" + value;
         player.getScheduler().run(AuMenus.getInstance(), task ->
-                player.chat("/" + value), null);
+                player.chat(cmd), null);
     }),
 
     CONSOLE(List.of("console", "c"), (player, value) -> {
@@ -141,7 +142,9 @@ public enum ActionType {
             online.getScheduler().run(AuMenus.getInstance(), task ->
                     online.playSound(online.getLocation(), parts[0], volume, pitch), null);
         }
-    });
+    }),
+
+    ;
 
     private final List<String> aliases;
     private final ActionExecutor executor;

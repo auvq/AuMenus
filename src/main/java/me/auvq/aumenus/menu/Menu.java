@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 import me.auvq.aumenus.action.Action;
 import me.auvq.aumenus.item.MenuItem;
+import me.auvq.aumenus.item.PlayerListTemplate;
 import me.auvq.aumenus.requirement.RequirementList;
 import org.bukkit.event.inventory.InventoryType;
 import org.jetbrains.annotations.NotNull;
@@ -27,6 +28,8 @@ public final class Menu {
     @Builder.Default
     private final boolean registerCommand = true;
     private final int updateInterval;
+    @Builder.Default
+    private final boolean dynamicTitle = false;
     private final int clickCooldown;
     @Builder.Default
     private final boolean allowTargetPlayer = false;
@@ -54,6 +57,13 @@ public final class Menu {
     private final @NotNull List<Integer> pageSlots = List.of();
     @Builder.Default
     private final @NotNull List<MenuItem> pageItems = List.of();
+
+    private final @Nullable PlayerListTemplate playerListTemplate;
+
+    private final @Nullable String predicateType;
+    private final @Nullable Map<String, Object> predicateConfig;
+    private final @Nullable String predicatePass;
+    private final @Nullable String predicateFail;
 
     @Builder.Default
     private final @NotNull String sourceFile = "";

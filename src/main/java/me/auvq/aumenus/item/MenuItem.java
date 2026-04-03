@@ -65,9 +65,31 @@ public final class MenuItem {
 
     private final @Nullable RequirementList viewRequire;
 
+    @Builder.Default
+    private final @NotNull List<MenuItemFrame> frames = List.of();
+    @Builder.Default
+    private final int frameInterval = 20;
+    @Builder.Default
+    private final boolean frameReverse = false;
+    @Builder.Default
+    private final boolean frameLoop = true;
+
+    private final @Nullable String progressCurrent;
+    private final @Nullable String progressMax;
+    private final @Nullable MenuItemFrame progressFilled;
+    private final @Nullable MenuItemFrame progressEmpty;
+
     private final @Nullable String errorMessage;
 
     public boolean hasError() {
         return errorMessage != null;
+    }
+
+    public boolean hasFrames() {
+        return !frames.isEmpty();
+    }
+
+    public boolean isProgress() {
+        return progressCurrent != null;
     }
 }

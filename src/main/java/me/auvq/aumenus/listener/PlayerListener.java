@@ -107,6 +107,7 @@ public final class PlayerListener implements Listener {
         }
 
         holder.stopUpdateTask();
+        holder.stopAnimationTask();
         plugin.getMenuRegistry().trackClose(playerId);
     }
 }

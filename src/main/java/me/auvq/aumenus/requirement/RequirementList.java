@@ -90,6 +90,6 @@ public final class RequirementList {
     }
 
     public record EvaluationResult(boolean passed, @NotNull List<Requirement> failed,
-                                       @NotNull List<Requirement> passed_list,
+                                       @NotNull List<Requirement> passedList,
                                        @NotNull List<Requirement> failedOptional) {}
 }

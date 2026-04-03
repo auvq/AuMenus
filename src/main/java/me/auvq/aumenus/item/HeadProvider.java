@@ -55,7 +55,7 @@ public final class HeadProvider {
             if (meta == null) {
                 return skull;
             }
-            PlayerProfile profile = Bukkit.createProfile(UUID.randomUUID());
+            PlayerProfile profile = Bukkit.createProfile(UUID.nameUUIDFromBytes(base64.getBytes(StandardCharsets.UTF_8)));
             profile.setProperty(new ProfileProperty("textures", base64));
             meta.setPlayerProfile(profile);
             skull.setItemMeta(meta);

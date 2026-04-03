@@ -503,6 +503,10 @@ public enum RequirementType {
         return matchesText(fullLore, lore, contains, ignoreCase);
     }
 
+    public static void clearCache() {
+        RegexCache.PATTERNS.clear();
+    }
+
     private static final class RegexCache {
         static final ConcurrentHashMap<String, Pattern> PATTERNS = new ConcurrentHashMap<>();
     }

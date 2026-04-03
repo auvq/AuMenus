@@ -191,6 +191,7 @@ public final class ActionRegistry {
             plugin.getMenuRegistry().trackOpen(player.getUniqueId(), newHolder);
             player.openInventory(newHolder.getInventory());
             newHolder.startUpdateTask(plugin);
+            newHolder.startAnimationTask(plugin);
         } else {
             plugin.getMenuRenderer().renderPage(holder);
         }

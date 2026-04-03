@@ -4,6 +4,7 @@ import me.auvq.aumenus.AuMenus;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -15,7 +16,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -28,6 +31,9 @@ public final class Util {
     private static final Pattern LEGACY_CODE_PATTERN = Pattern.compile("&([0-9a-fk-orA-FK-OR])");
     private static final Pattern SECTION_HEX_PATTERN = Pattern.compile("§x(§[0-9a-fA-F]){6}");
     private static final Pattern SECTION_CODE_PATTERN = Pattern.compile("§([0-9a-fk-orA-FK-OR])");
+    private static final Map<String, Component> PARSE_CACHE = new ConcurrentHashMap<>();
+    private static final int PARSE_CACHE_MAX = 10_000;
+    private static final AtomicInteger PARSE_CACHE_SIZE = new AtomicInteger();
 
     private Util() {}
 
@@ -37,7 +43,8 @@ public final class Util {
 
     public static @NotNull Component playerNotFound(@NotNull String playerName) {
         String msg = getMessage("player_not_found", "&cPlayer '{player}' not found.");
-        return parse(msg.replace("{player}", playerName));
+        String escaped = MiniMessage.miniMessage().escapeTags(playerName);
+        return parse(msg.replace("{player}", escaped));
     }
 
     public static @NotNull String toLegacyMiniMessage(@Nullable String input) {
@@ -47,28 +54,36 @@ public final class Util {
 
         String result = input;
 
-        Matcher sectionHexMatcher = SECTION_HEX_PATTERN.matcher(result);
-        StringBuilder sectionHexBuilder = new StringBuilder();
-        while (sectionHexMatcher.find()) {
-            String hex = sectionHexMatcher.group().replaceAll("§[xX]|§", "");
-            sectionHexMatcher.appendReplacement(sectionHexBuilder,
-                    Matcher.quoteReplacement(FORMAT_RESET + "<color:#" + hex + ">"));
+        if (result.contains("§x")) {
+            Matcher sectionHexMatcher = SECTION_HEX_PATTERN.matcher(result);
+            StringBuilder sectionHexBuilder = new StringBuilder();
+            while (sectionHexMatcher.find()) {
+                String hex = sectionHexMatcher.group().replaceAll("§[xX]|§", "");
+                sectionHexMatcher.appendReplacement(sectionHexBuilder,
+                        Matcher.quoteReplacement(FORMAT_RESET + "<color:#" + hex + ">"));
+            }
+            sectionHexMatcher.appendTail(sectionHexBuilder);
+            result = sectionHexBuilder.toString();
         }
-        sectionHexMatcher.appendTail(sectionHexBuilder);
-        result = sectionHexBuilder.toString();
 
-        result = SECTION_CODE_PATTERN.matcher(result).replaceAll("&$1");
-
-        Matcher hexMatcher = HEX_PATTERN.matcher(result);
-        StringBuilder hexBuilder = new StringBuilder();
-        while (hexMatcher.find()) {
-            hexMatcher.appendReplacement(hexBuilder,
-                    Matcher.quoteReplacement(FORMAT_RESET) + "<color:#" + hexMatcher.group(1) + ">");
+        if (result.contains("§")) {
+            result = SECTION_CODE_PATTERN.matcher(result).replaceAll("&$1");
         }
-        hexMatcher.appendTail(hexBuilder);
-        result = hexBuilder.toString();
 
-        result = replaceLegacyCodes(result);
+        if (result.contains("&#")) {
+            Matcher hexMatcher = HEX_PATTERN.matcher(result);
+            StringBuilder hexBuilder = new StringBuilder();
+            while (hexMatcher.find()) {
+                hexMatcher.appendReplacement(hexBuilder,
+                        Matcher.quoteReplacement(FORMAT_RESET) + "<color:#" + hexMatcher.group(1) + ">");
+            }
+            hexMatcher.appendTail(hexBuilder);
+            result = hexBuilder.toString();
+        }
+
+        if (result.contains("&")) {
+            result = replaceLegacyCodes(result);
+        }
 
         return result;
     }
@@ -77,9 +92,19 @@ public final class Util {
         if (input == null || input.isEmpty()) {
             return Component.empty();
         }
+        Component cached = PARSE_CACHE.get(input);
+        if (cached != null) {
+            return cached;
+        }
         String prepared = (input.contains("&") || input.contains("§"))
                 ? toLegacyMiniMessage(input) : input;
-        return MINI_MESSAGE.deserialize("<!italic>" + prepared);
+        Component result = MINI_MESSAGE.deserialize("<!italic>" + prepared);
+        if (PARSE_CACHE_SIZE.get() < PARSE_CACHE_MAX) {
+            if (PARSE_CACHE.putIfAbsent(input, result) == null) {
+                PARSE_CACHE_SIZE.incrementAndGet();
+            }
+        }
+        return result;
     }
 
     public static @NotNull List<Component> parseLines(@Nullable List<String> lines) {
@@ -90,24 +115,58 @@ public final class Util {
     }
 
     public static @NotNull String resolveBuiltInPlaceholders(@NotNull Player player, @NotNull String text) {
-        return text
-                .replace("%player%", player.getName())
-                .replace("%player_name%", player.getName())
-                .replace("%player_displayname%", player.getName())
-                .replace("%player_level%", String.valueOf(player.getLevel()))
-                .replace("%player_health%", String.format("%.1f", player.getHealth()))
-                .replace("%player_max_health%", String.format("%.1f", player.getMaxHealth()))
-                .replace("%player_food_level%", String.valueOf(player.getFoodLevel()))
-                .replace("%player_world%", player.getWorld().getName())
-                .replace("%player_x%", String.valueOf(player.getLocation().getBlockX()))
-                .replace("%player_y%", String.valueOf(player.getLocation().getBlockY()))
-                .replace("%player_z%", String.valueOf(player.getLocation().getBlockZ()))
-                .replace("%player_gamemode%", player.getGameMode().name())
-                .replace("%player_uuid%", player.getUniqueId().toString())
-                .replace("%server_online%", String.valueOf(Bukkit.getOnlinePlayers().size()))
-                .replace("%server_max_players%", String.valueOf(Bukkit.getMaxPlayers()))
-                .replace("%random_100%", String.valueOf(ThreadLocalRandom.current().nextInt(100)))
-                .replace("%random_1000%", String.valueOf(ThreadLocalRandom.current().nextInt(1000)));
+        String result = text;
+
+        if (result.contains("%player%")) {
+            result = result.replace("%player%", player.getName());
+        }
+        if (result.contains("%player_name%")) {
+            result = result.replace("%player_name%", player.getName());
+        }
+        if (result.contains("%player_displayname%")) {
+            result = result.replace("%player_displayname%", player.getName());
+        }
+        if (result.contains("%player_level%")) {
+            result = result.replace("%player_level%", String.valueOf(player.getLevel()));
+        }
+        if (result.contains("%player_health%")) {
+            result = result.replace("%player_health%", String.format("%.1f", player.getHealth()));
+        }
+        if (result.contains("%player_max_health%")) {
+            result = result.replace("%player_max_health%", String.format("%.1f", player.getMaxHealth()));
+        }
+        if (result.contains("%player_food_level%")) {
+            result = result.replace("%player_food_level%", String.valueOf(player.getFoodLevel()));
+        }
+        if (result.contains("%player_world%")) {
+            result = result.replace("%player_world%", player.getWorld().getName());
+        }
+        if (result.contains("%player_x%") || result.contains("%player_y%") || result.contains("%player_z%")) {
+            Location location = player.getLocation();
+            result = result.replace("%player_x%", String.valueOf(location.getBlockX()));
+            result = result.replace("%player_y%", String.valueOf(location.getBlockY()));
+            result = result.replace("%player_z%", String.valueOf(location.getBlockZ()));
+        }
+        if (result.contains("%player_gamemode%")) {
+            result = result.replace("%player_gamemode%", player.getGameMode().name());
+        }
+        if (result.contains("%player_uuid%")) {
+            result = result.replace("%player_uuid%", player.getUniqueId().toString());
+        }
+        if (result.contains("%server_online%")) {
+            result = result.replace("%server_online%", String.valueOf(Bukkit.getOnlinePlayers().size()));
+        }
+        if (result.contains("%server_max_players%")) {
+            result = result.replace("%server_max_players%", String.valueOf(Bukkit.getMaxPlayers()));
+        }
+        if (result.contains("%random_100%")) {
+            result = result.replace("%random_100%", String.valueOf(ThreadLocalRandom.current().nextInt(100)));
+        }
+        if (result.contains("%random_1000%")) {
+            result = result.replace("%random_1000%", String.valueOf(ThreadLocalRandom.current().nextInt(1000)));
+        }
+
+        return result;
     }
 
     public static @NotNull ItemStack buildErrorItem(@NotNull String itemName, @Nullable String errorMessage) {
@@ -138,14 +197,24 @@ public final class Util {
             return result;
         }
 
-        for (Map.Entry<String, String> arg : holder.getArguments().entrySet()) {
-            result = result.replace("{" + arg.getKey() + "}", arg.getValue());
+        if (!holder.getArguments().isEmpty()) {
+            for (Map.Entry<String, String> arg : holder.getArguments().entrySet()) {
+                result = result.replace("{" + arg.getKey() + "}", arg.getValue());
+            }
         }
 
-        result = result.replace("{page}", String.valueOf(holder.getCurrentPage()));
-        result = result.replace("{max_page}", String.valueOf(holder.getMaxPage()));
-        result = result.replace("{player}", player.getName());
-        result = result.replace("{target}", holder.getTargetName());
+        if (result.contains("{page}")) {
+            result = result.replace("{page}", String.valueOf(holder.getCurrentPage()));
+        }
+        if (result.contains("{max_page}")) {
+            result = result.replace("{max_page}", String.valueOf(holder.getMaxPage()));
+        }
+        if (result.contains("{player}")) {
+            result = result.replace("{player}", player.getName());
+        }
+        if (result.contains("{target}")) {
+            result = result.replace("{target}", holder.getTargetName());
+        }
 
         OfflinePlayer papiTarget = holder.getPlaceholderTarget();
         if (result.contains("%")) {

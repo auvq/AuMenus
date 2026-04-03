@@ -11,34 +11,47 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
-import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import org.bukkit.inventory.ItemStack;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 public final class MenuHolder implements InventoryHolder {
 
     private final @NotNull Menu menu;
     private final @NotNull UUID playerId;
-    private final @Nullable UUID targetId;
+    private final @Nullable OfflinePlayer target;
     private final @NotNull Inventory inventory;
     private final @NotNull Map<String, String> arguments;
     private final @NotNull Map<Integer, MenuItem> activeItems;
+    private final @NotNull Map<Integer, Integer> frameIndices;
+    private final @NotNull Map<Integer, Long> frameLastUpdate;
+    private final @NotNull Map<Integer, List<ItemStack>> cachedFrameStacks;
+    private final @NotNull List<Integer> animatedSlots = new ArrayList<>();
+
+    private boolean hasAnimatedItems = false;
+    private int animatedCount = 0;
+    private @Nullable String lastRenderedTitle;
 
     @Setter
     private int currentPage;
     @Setter
-    private boolean updating;
+    private volatile boolean updating;
     @Setter
     private long lastClickTime;
     @Setter
-    private boolean reloading;
+    private volatile boolean reloading;
+    @Setter
+    private long lastUpdateTime;
 
-    private @Nullable ScheduledTask updateTask;
 
     public MenuHolder(@NotNull Menu menu, @NotNull Player player, @NotNull Map<String, String> arguments) {
         this(menu, player, null, arguments, 1);
@@ -53,9 +66,13 @@ public final class MenuHolder implements InventoryHolder {
                        @NotNull Map<String, String> arguments, int initialPage) {
         this.menu = menu;
         this.playerId = player.getUniqueId();
-        this.targetId = target != null ? target.getUniqueId() : null;
+        this.target = target;
         this.arguments = arguments;
-        this.activeItems = new ConcurrentHashMap<>();
+        int capacity = (int) Math.ceil(menu.getSize() / 0.75);
+        this.activeItems = new HashMap<>(capacity);
+        this.frameIndices = new HashMap<>(capacity);
+        this.frameLastUpdate = new HashMap<>(capacity);
+        this.cachedFrameStacks = new HashMap<>(capacity);
         this.currentPage = initialPage;
         this.updating = false;
         this.lastClickTime = 0;
@@ -78,7 +95,7 @@ public final class MenuHolder implements InventoryHolder {
     }
 
     public @Nullable OfflinePlayer getTarget() {
-        return targetId != null ? Bukkit.getOfflinePlayer(targetId) : null;
+        return target;
     }
 
     public @NotNull OfflinePlayer getPlaceholderTarget() {
@@ -108,45 +125,62 @@ public final class MenuHolder implements InventoryHolder {
 
     public void setActiveItem(int slot, @Nullable MenuItem item) {
         if (item == null) {
-            activeItems.remove(slot);
+            MenuItem removed = activeItems.remove(slot);
+            frameIndices.remove(slot);
+            frameLastUpdate.remove(slot);
+            cachedFrameStacks.remove(slot);
+            if (animatedSlots.remove(Integer.valueOf(slot)) && removed != null && removed.hasFrames()) {
+                animatedCount--;
+                hasAnimatedItems = animatedCount > 0;
+            }
         } else {
             activeItems.put(slot, item);
+            if (item.hasFrames()) {
+                animatedCount++;
+                hasAnimatedItems = true;
+                if (!animatedSlots.contains(slot)) {
+                    animatedSlots.add(slot);
+                }
+            }
         }
+    }
+
+    public boolean hasAnimatedItems() {
+        return hasAnimatedItems;
+    }
+
+    public void startAnimationTask(@NotNull AuMenus plugin) {
+    }
+
+    public void stopAnimationTask() {
     }
 
     public void startUpdateTask(@NotNull AuMenus plugin) {
-        if (menu.getUpdateInterval() <= 0) {
-            return;
-        }
-
-        Player player = getPlayer();
-        if (player == null) {
-            return;
-        }
-
-        this.updateTask = player.getScheduler().runAtFixedRate(plugin, task -> {
-            Player onlinePlayer = getPlayer();
-            if (onlinePlayer == null || !onlinePlayer.isOnline()) {
-                stopUpdateTask();
-                return;
-            }
-            plugin.getMenuRenderer().refreshUpdatableItems(this);
-        }, null, menu.getUpdateInterval(), menu.getUpdateInterval());
     }
 
     public void stopUpdateTask() {
-        if (updateTask != null) {
-            updateTask.cancel();
-            updateTask = null;
-        }
     }
 
     public int getMaxPage() {
         if (!menu.isPaginated() || menu.getPageSlots().isEmpty()) {
             return 1;
         }
+        int totalItems = menu.getPlayerListTemplate() != null
+                ? Bukkit.getOnlinePlayers().size()
+                : menu.getPageItems().size();
         return Math.max(1,
-                (int) Math.ceil((double) menu.getPageItems().size() / menu.getPageSlots().size()));
+                (int) Math.ceil((double) totalItems / menu.getPageSlots().size()));
+    }
+
+    public void updateTitle(@NotNull Player player) {
+        String resolvedTitle = resolveTitle(player);
+        if (resolvedTitle.equals(lastRenderedTitle)) {
+            return;
+        }
+        lastRenderedTitle = resolvedTitle;
+        Component titleComponent = Util.parse(resolvedTitle);
+        String legacyTitle = LegacyComponentSerializer.legacySection().serialize(titleComponent);
+        player.getOpenInventory().setTitle(legacyTitle);
     }
 
     private @NotNull String resolveTitle(@NotNull Player player) {
