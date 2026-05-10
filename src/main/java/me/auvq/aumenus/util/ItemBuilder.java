@@ -1,5 +1,7 @@
 package me.auvq.aumenus.util;
 
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import me.auvq.aumenus.AuMenus;
 import me.auvq.aumenus.hook.HeadDatabaseHook;
 import me.auvq.aumenus.hook.ItemsAdderHook;
@@ -10,12 +12,13 @@ import me.auvq.aumenus.item.MenuItem;
 import me.auvq.aumenus.item.MenuItemFrame;
 import me.auvq.aumenus.menu.MenuHolder;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import io.papermc.paper.registry.RegistryAccess;
-import io.papermc.paper.registry.RegistryKey;
+import org.bukkit.block.banner.Pattern;
+import org.bukkit.block.banner.PatternType;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
@@ -30,12 +33,9 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.trim.ArmorTrim;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
 import org.bukkit.inventory.meta.trim.TrimPattern;
-import org.bukkit.block.banner.Pattern;
-import org.bukkit.block.banner.PatternType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
-import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,11 +43,14 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class ItemBuilder {
 
     private static final Method SET_ITEM_MODEL;
     private static final Method SET_TOOLTIP_STYLE;
+    private static final Map<String, Material> MATERIAL_CACHE = new ConcurrentHashMap<>();
+    private static final Material MATERIAL_FALLBACK = Material.STONE;
 
     static {
         Method itemModel = null;
@@ -65,9 +68,14 @@ public final class ItemBuilder {
     }
 
     private final AuMenus plugin;
+    private final Map<MenuItem, ItemStack> staticCache = new ConcurrentHashMap<>();
 
     public ItemBuilder(@NotNull AuMenus plugin) {
         this.plugin = plugin;
+    }
+
+    public void clearCache() {
+        staticCache.clear();
     }
 
     public @NotNull ItemStack buildItemStack(@NotNull Player player,
@@ -77,12 +85,65 @@ public final class ItemBuilder {
             return Util.buildErrorItem(item.getName(), item.getErrorMessage());
         }
 
+        boolean cacheable = isStaticItem(item);
+        if (cacheable) {
+            ItemStack cached = staticCache.get(item);
+            if (cached != null) {
+                return cached.clone();
+            }
+        }
+
+        ItemStack built;
         try {
-            return buildItemInternal(player, item, holder);
+            built = buildItemInternal(player, item, holder);
         } catch (RuntimeException e) {
             plugin.getLogger().warning("Failed to build item '" + item.getName() + "': " + e.getMessage());
             return Util.buildErrorItem(item.getName(), e.getMessage());
         }
+
+        if (cacheable) {
+            staticCache.put(item, built.clone());
+        }
+        return built;
+    }
+
+    private static boolean isStaticItem(@NotNull MenuItem item) {
+        String material = item.getMaterial();
+        if (isPlayerDependentMaterial(material)) {
+            return false;
+        }
+        if (hasPlaceholder(material)) {
+            return false;
+        }
+        if (item.getDynamicAmount() != null) {
+            return false;
+        }
+        String displayName = item.getDisplayName();
+        if (displayName != null && hasPlaceholder(displayName)) {
+            return false;
+        }
+        List<String> lore = item.getLore();
+        if (lore == null) {
+            return true;
+        }
+        for (String line : lore) {
+            if (hasPlaceholder(line)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isPlayerDependentMaterial(@NotNull String material) {
+        return material.startsWith("main_hand")
+                || material.startsWith("off_hand")
+                || material.startsWith("armor_")
+                || material.startsWith("placeholder-")
+                || material.startsWith("head-");
+    }
+
+    private static boolean hasPlaceholder(@NotNull String text) {
+        return text.indexOf('{') >= 0 || text.indexOf('%') >= 0;
     }
 
     public @NotNull ItemStack buildFrameItemStack(@NotNull Player player,
@@ -365,13 +426,17 @@ public final class ItemBuilder {
         if (item.getItemModel() != null && SET_ITEM_MODEL != null) {
             try {
                 SET_ITEM_MODEL.invoke(meta, NamespacedKey.fromString(item.getItemModel()));
-            } catch (ReflectiveOperationException ignored) {
+            } catch (ReflectiveOperationException e) {
+                plugin.getLogger().warning("Failed to apply item_model '" + item.getItemModel()
+                        + "' to '" + item.getName() + "': " + e.getMessage());
             }
         }
         if (item.getTooltipStyle() != null && SET_TOOLTIP_STYLE != null) {
             try {
                 SET_TOOLTIP_STYLE.invoke(meta, NamespacedKey.fromString(item.getTooltipStyle()));
-            } catch (ReflectiveOperationException ignored) {
+            } catch (ReflectiveOperationException e) {
+                plugin.getLogger().warning("Failed to apply tooltip_style '" + item.getTooltipStyle()
+                        + "' to '" + item.getName() + "': " + e.getMessage());
             }
         }
         if (item.getDamage() != null && meta instanceof Damageable damageable) {
@@ -545,9 +610,11 @@ public final class ItemBuilder {
             return resolveNexo(materialStr.substring(5));
         }
 
-        Material material = Material.matchMaterial(materialStr);
+        Material material = MATERIAL_CACHE.get(materialStr);
         if (material == null) {
-            material = Material.STONE;
+            Material resolved = Material.matchMaterial(materialStr);
+            material = resolved != null ? resolved : MATERIAL_FALLBACK;
+            MATERIAL_CACHE.put(materialStr, material);
         }
         return new ItemStack(material);
     }

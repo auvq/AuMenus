@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class RequirementRegistry {
 
@@ -65,26 +66,15 @@ public final class RequirementRegistry {
 
     private @NotNull RequirementList parseShorthand(@NotNull Map<String, Object> map) {
         List<Requirement> requirements = new ArrayList<>();
-        List<Action> denyActions = new ArrayList<>();
 
         if (map.containsKey("perm")) {
-            requirements.add(Requirement.builder()
-                    .name("perm")
-                    .type("has_permission")
-                    .config(Map.of("permission", map.get("perm")))
-                    .denyActions(List.of())
-                    .successActions(List.of())
-                    .build());
+            requirements.add(buildSimpleRequirement("perm", "has_permission",
+                    Map.of("permission", map.get("perm"))));
         }
 
         if (map.containsKey("money")) {
-            requirements.add(Requirement.builder()
-                    .name("money")
-                    .type("has_money")
-                    .config(Map.of("amount", map.get("money")))
-                    .denyActions(List.of())
-                    .successActions(List.of())
-                    .build());
+            requirements.add(buildSimpleRequirement("money", "has_money",
+                    Map.of("amount", map.get("money"))));
         }
 
         if (map.containsKey("exp")) {
@@ -93,13 +83,7 @@ public final class RequirementRegistry {
             if (map.containsKey("level")) {
                 expConfig.put("level", map.get("level"));
             }
-            requirements.add(Requirement.builder()
-                    .name("exp")
-                    .type("has_exp")
-                    .config(expConfig)
-                    .denyActions(List.of())
-                    .successActions(List.of())
-                    .build());
+            requirements.add(buildSimpleRequirement("exp", "has_exp", expConfig));
         }
 
         if (map.containsKey("item")) {
@@ -110,24 +94,28 @@ public final class RequirementRegistry {
             if (parts.length > 1) {
                 itemConfig.put("amount", Integer.parseInt(parts[1]));
             }
-            requirements.add(Requirement.builder()
-                    .name("item")
-                    .type("has_item")
-                    .config(itemConfig)
-                    .denyActions(List.of())
-                    .successActions(List.of())
-                    .build());
+            requirements.add(buildSimpleRequirement("item", "has_item", itemConfig));
         }
 
-        if (map.containsKey("deny")) {
-            denyActions = parseDenyActions(map.get("deny"));
-        }
+        List<Action> denyActions = map.containsKey("deny")
+                ? parseActionList(map.get("deny")) : List.of();
 
         return RequirementList.builder()
                 .requirements(requirements)
                 .minimumRequired(requirements.size())
                 .stopAtSuccess(false)
                 .denyActions(denyActions)
+                .successActions(List.of())
+                .build();
+    }
+
+    private @NotNull Requirement buildSimpleRequirement(@NotNull String name, @NotNull String type,
+                                                          @NotNull Map<String, Object> config) {
+        return Requirement.builder()
+                .name(name)
+                .type(type)
+                .config(config)
+                .denyActions(List.of())
                 .successActions(List.of())
                 .build();
     }
@@ -145,9 +133,9 @@ public final class RequirementRegistry {
             }
 
             List<Action> checkDeny = checkConfig.containsKey("deny")
-                    ? parseDenyActions(checkConfig.get("deny")) : List.of();
+                    ? parseActionList(checkConfig.get("deny")) : List.of();
             List<Action> checkSuccess = checkConfig.containsKey("success")
-                    ? parseDenyActions(checkConfig.get("success")) : List.of();
+                    ? parseActionList(checkConfig.get("success")) : List.of();
             boolean optional = Boolean.TRUE.equals(checkConfig.get("optional"));
 
             Map<String, Object> evalConfig = new LinkedHashMap<>(checkConfig);
@@ -168,7 +156,7 @@ public final class RequirementRegistry {
 
         int minimum = map.containsKey("minimum") ? ((Number) map.get("minimum")).intValue() : 0;
         boolean stopAtSuccess = Boolean.TRUE.equals(map.get("stop_at_success"));
-        List<Action> denyActions = map.containsKey("deny") ? parseDenyActions(map.get("deny")) : List.of();
+        List<Action> denyActions = map.containsKey("deny") ? parseActionList(map.get("deny")) : List.of();
 
         return RequirementList.builder()
                 .requirements(requirements)
@@ -185,7 +173,7 @@ public final class RequirementRegistry {
         config.remove("type");
         config.remove("deny");
 
-        List<Action> denyActions = map.containsKey("deny") ? parseDenyActions(map.get("deny")) : List.of();
+        List<Action> denyActions = map.containsKey("deny") ? parseActionList(map.get("deny")) : List.of();
 
         Requirement req = Requirement.builder()
                 .name("single")
@@ -204,17 +192,17 @@ public final class RequirementRegistry {
                 .build();
     }
 
-    private @NotNull List<Action> parseDenyActions(@Nullable Object denyObj) {
-        if (denyObj instanceof String str) {
+    private @NotNull List<Action> parseActionList(@Nullable Object raw) {
+        if (raw instanceof String str) {
             return List.of(new Action("msg", str));
         }
-        if (!(denyObj instanceof List<?> list)) {
+        if (!(raw instanceof List<?> list)) {
             return List.of();
         }
 
         List<Action> actions = new ArrayList<>();
         for (Object item : list) {
-            Action parsed = parseSingleDenyAction(item);
+            Action parsed = parseSingleAction(item);
             if (parsed != null) {
                 actions.add(parsed);
             }
@@ -222,8 +210,19 @@ public final class RequirementRegistry {
         return actions;
     }
 
-    private @Nullable Action parseSingleDenyAction(@NotNull Object item) {
+    private static final Set<String> BARE_ACTION_TYPES = Set.of(
+            "close", "refresh", "prev_page", "next_page"
+    );
+
+    private @Nullable Action parseSingleAction(@NotNull Object item) {
         if (item instanceof String str) {
+            if (BARE_ACTION_TYPES.contains(str.toLowerCase())) {
+                return new Action(str.toLowerCase(), "");
+            }
+            String[] parts = str.split(":\\s*", 2);
+            if (parts.length == 2) {
+                return new Action(parts[0].trim(), parts[1].trim());
+            }
             return new Action("msg", str);
         }
         if (!(item instanceof Map<?, ?> map)) {

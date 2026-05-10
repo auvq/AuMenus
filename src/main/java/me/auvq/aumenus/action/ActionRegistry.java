@@ -3,7 +3,9 @@ package me.auvq.aumenus.action;
 import me.auvq.aumenus.AuMenus;
 import me.auvq.aumenus.menu.Menu;
 import me.auvq.aumenus.menu.MenuHolder;
+import me.auvq.aumenus.util.InventoryUpdater;
 import me.auvq.aumenus.util.Util;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -61,7 +63,9 @@ public final class ActionRegistry {
     }
 
     public void executeSingle(@NotNull Player player, @NotNull Action action) {
-        if (!player.isOnline()) return;
+        if (!player.isOnline()) {
+            return;
+        }
 
         String type = action.getType().toLowerCase();
         String value = resolveActionPlaceholders(player, action.getValue());
@@ -180,21 +184,41 @@ public final class ActionRegistry {
         }
 
         holder.setCurrentPage(newPage);
+        plugin.getMenuRenderer().renderPage(holder);
+        plugin.getMenuRenderer().refreshStaticItems(holder);
 
-        boolean titleHasPagePlaceholder = menu.getTitle().contains("{page}")
-                || menu.getTitle().contains("{max_page}");
-        if (titleHasPagePlaceholder) {
-            holder.stopUpdateTask();
-            holder.setReloading(true);
-            MenuHolder newHolder = new MenuHolder(menu, player, holder.getTarget(), holder.getArguments(), newPage);
-            plugin.getMenuRenderer().render(newHolder);
-            plugin.getMenuRegistry().trackOpen(player.getUniqueId(), newHolder);
-            player.openInventory(newHolder.getInventory());
-            newHolder.startUpdateTask(plugin);
-            newHolder.startAnimationTask(plugin);
-        } else {
-            plugin.getMenuRenderer().renderPage(holder);
+        String rawTitle = menu.getTitle();
+        boolean titleDependsOnPage = rawTitle.contains("{page}") || rawTitle.contains("{max_page}");
+
+        if (!plugin.isSmoothTransitions() || !InventoryUpdater.isAvailable()) {
+            if (titleDependsOnPage) {
+                fullReopenSameMenu(player, holder, newPage);
+            }
+            return;
         }
+
+        if (!titleDependsOnPage) {
+            InventoryUpdater.sendSmoothUpdate(player, holder.getInventory(), null, null);
+            return;
+        }
+
+        String resolvedTitle = holder.resolveTitle(player);
+        Component titleComponent = Util.parse(resolvedTitle);
+        holder.setLastRenderedTitle(resolvedTitle);
+        boolean sent = InventoryUpdater.sendSmoothUpdate(
+                player, holder.getInventory(), titleComponent, resolvedTitle);
+        if (!sent) {
+            fullReopenSameMenu(player, holder, newPage);
+        }
+    }
+
+    private void fullReopenSameMenu(@NotNull Player player, @NotNull MenuHolder holder, int newPage) {
+        holder.setReloading(true);
+        MenuHolder newHolder = new MenuHolder(
+                holder.getMenu(), player, holder.getTarget(), holder.getArguments(), newPage);
+        plugin.getMenuRenderer().render(newHolder);
+        plugin.getMenuRegistry().trackOpen(player.getUniqueId(), newHolder);
+        player.openInventory(newHolder.getInventory());
     }
 
     public @NotNull List<Action> parseActions(@Nullable List<?> rawList) {
@@ -213,7 +237,7 @@ public final class ActionRegistry {
     }
 
     @SuppressWarnings("unchecked")
-    private @Nullable Action parseAction(@NotNull Object entry) {
+    private @Nullable Action parseAction(@Nullable Object entry) {
         if (entry instanceof String str) {
             String[] parts = str.split("\\s+", 2);
             return new Action(parts[0], parts.length > 1 ? parts[1] : "");
@@ -299,6 +323,11 @@ public final class ActionRegistry {
 
         if (plugin.getHookProvider().isPapiEnabled() && result.contains("%")) {
             result = plugin.getHookProvider().papi().setPlaceholders(placeholderTarget, result);
+        }
+
+        if (result.contains("%player_name%")) {
+            debugLog("Fallback %player_name% replacement for " + player.getName() + " on action value: " + value);
+            result = result.replace("%player_name%", player.getName());
         }
         return result;
     }

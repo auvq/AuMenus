@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import me.auvq.aumenus.AuMenus;
@@ -92,7 +93,7 @@ public final class MenuCommand {
 
             if (menu.isAllowTargetPlayer() && menu.isTargetPlayerArg()) {
                 argsBuilder.suggests((context, builder) -> {
-                    Bukkit.getOnlinePlayers().forEach(p -> builder.suggest(p.getName()));
+                    suggestOnlinePlayers(builder);
                     return builder.buildFuture();
                 });
             }
@@ -158,7 +159,7 @@ public final class MenuCommand {
                         }
                     }
                     if (target == null) {
-                        player.sendMessage(Util.parse("<red>Player '" + targetName + "' not found."));
+                        player.sendMessage(Util.playerNotFound(targetName));
                         return 0;
                     }
                     continue;
@@ -189,7 +190,7 @@ public final class MenuCommand {
                         .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("player", StringArgumentType.word())
                                 .requires(source -> source.getSender().hasPermission("aumenus.open.others"))
                                 .suggests((context, builder) -> {
-                                    Bukkit.getOnlinePlayers().forEach(p -> builder.suggest(p.getName()));
+                                    suggestOnlinePlayers(builder);
                                     return builder.buildFuture();
                                 })
                                 .executes(context -> {
@@ -282,12 +283,18 @@ public final class MenuCommand {
                 });
     }
 
+    private static void suggestOnlinePlayers(@NotNull SuggestionsBuilder builder) {
+        for (Player online : Util.snapshotOnlinePlayers()) {
+            builder.suggest(online.getName());
+        }
+    }
+
     private static LiteralArgumentBuilder<CommandSourceStack> executeSubcommand(@NotNull AuMenus plugin) {
         return Commands.literal("execute")
                 .requires(source -> source.getSender().hasPermission("aumenus.execute"))
                 .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("player", StringArgumentType.word())
                         .suggests((context, builder) -> {
-                            Bukkit.getOnlinePlayers().forEach(p -> builder.suggest(p.getName()));
+                            suggestOnlinePlayers(builder);
                             return builder.buildFuture();
                         })
                         .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("action", StringArgumentType.greedyString())
@@ -385,7 +392,7 @@ public final class MenuCommand {
                 .requires(source -> source.getSender().hasPermission("aumenus.admin"))
                 .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("player", StringArgumentType.word())
                         .suggests((context, builder) -> {
-                            Bukkit.getOnlinePlayers().forEach(p -> builder.suggest(p.getName()));
+                            suggestOnlinePlayers(builder);
                             return builder.buildFuture();
                         })
                         .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("operation", StringArgumentType.word())

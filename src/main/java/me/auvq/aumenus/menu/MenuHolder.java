@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import me.auvq.aumenus.AuMenus;
 import me.auvq.aumenus.item.MenuItem;
+import me.auvq.aumenus.util.InventoryUpdater;
 import me.auvq.aumenus.util.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -26,11 +27,14 @@ import java.util.UUID;
 @Getter
 public final class MenuHolder implements InventoryHolder {
 
-    private final @NotNull Menu menu;
+    @Setter
+    private @NotNull Menu menu;
     private final @NotNull UUID playerId;
-    private final @Nullable OfflinePlayer target;
+    @Setter
+    private @Nullable OfflinePlayer target;
     private final @NotNull Inventory inventory;
-    private final @NotNull Map<String, String> arguments;
+    @Setter
+    private @NotNull Map<String, String> arguments;
     private final @NotNull Map<Integer, MenuItem> activeItems;
     private final @NotNull Map<Integer, Integer> frameIndices;
     private final @NotNull Map<Integer, Long> frameLastUpdate;
@@ -39,6 +43,7 @@ public final class MenuHolder implements InventoryHolder {
 
     private boolean hasAnimatedItems = false;
     private int animatedCount = 0;
+    @Setter
     private @Nullable String lastRenderedTitle;
 
     @Setter
@@ -99,9 +104,9 @@ public final class MenuHolder implements InventoryHolder {
     }
 
     public @NotNull OfflinePlayer getPlaceholderTarget() {
-        OfflinePlayer target = getTarget();
-        if (target != null) {
-            return target;
+        OfflinePlayer resolved = getTarget();
+        if (resolved != null) {
+            return resolved;
         }
         Player player = getPlayer();
         if (player != null) {
@@ -111,9 +116,9 @@ public final class MenuHolder implements InventoryHolder {
     }
 
     public @NotNull String getTargetName() {
-        OfflinePlayer target = getTarget();
-        if (target != null && target.getName() != null) {
-            return target.getName();
+        OfflinePlayer resolved = getTarget();
+        if (resolved != null && resolved.getName() != null) {
+            return resolved.getName();
         }
         Player player = getPlayer();
         return player != null ? player.getName() : "Unknown";
@@ -149,18 +154,6 @@ public final class MenuHolder implements InventoryHolder {
         return hasAnimatedItems;
     }
 
-    public void startAnimationTask(@NotNull AuMenus plugin) {
-    }
-
-    public void stopAnimationTask() {
-    }
-
-    public void startUpdateTask(@NotNull AuMenus plugin) {
-    }
-
-    public void stopUpdateTask() {
-    }
-
     public int getMaxPage() {
         if (!menu.isPaginated() || menu.getPageSlots().isEmpty()) {
             return 1;
@@ -179,11 +172,27 @@ public final class MenuHolder implements InventoryHolder {
         }
         lastRenderedTitle = resolvedTitle;
         Component titleComponent = Util.parse(resolvedTitle);
+        if (InventoryUpdater.sendSmoothUpdate(player, inventory, titleComponent, resolvedTitle)) {
+            return;
+        }
         String legacyTitle = LegacyComponentSerializer.legacySection().serialize(titleComponent);
         player.getOpenInventory().setTitle(legacyTitle);
     }
 
-    private @NotNull String resolveTitle(@NotNull Player player) {
+    public void resetForSwap() {
+        activeItems.clear();
+        frameIndices.clear();
+        frameLastUpdate.clear();
+        cachedFrameStacks.clear();
+        animatedSlots.clear();
+        animatedCount = 0;
+        hasAnimatedItems = false;
+        lastRenderedTitle = null;
+        currentPage = 1;
+        lastUpdateTime = 0L;
+    }
+
+    public @NotNull String resolveTitle(@NotNull Player player) {
         String title = menu.getTitle();
 
         for (Map.Entry<String, String> arg : arguments.entrySet()) {

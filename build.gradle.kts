@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "me.auvq"
-version = "1.0.5"
+version = "1.0.6"
 
 repositories {
     mavenCentral()

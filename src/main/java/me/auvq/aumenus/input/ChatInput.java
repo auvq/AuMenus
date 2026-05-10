@@ -6,13 +6,11 @@ import me.auvq.aumenus.action.ActionRegistry;
 import me.auvq.aumenus.util.Util;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.jetbrains.annotations.NotNull;
@@ -25,8 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class ChatInput implements Listener {
 
-    private static final Map<UUID, PendingInput> PENDING = new ConcurrentHashMap<>();
-
+    private final Map<UUID, PendingInput> pendingInputs = new ConcurrentHashMap<>();
     private final AuMenus plugin;
 
     public ChatInput(@NotNull AuMenus plugin) {
@@ -49,21 +46,21 @@ public final class ChatInput implements Listener {
         ScheduledTask timeoutTask = null;
         if (timeoutSeconds > 0) {
             timeoutTask = player.getScheduler().runDelayed(plugin, task -> {
-                PendingInput pending = PENDING.remove(playerId);
-                if (pending == null) {
+                PendingInput timedOut = pendingInputs.remove(playerId);
+                if (timedOut == null) {
                     return;
                 }
                 plugin.getActionRegistry().executeActions(player, onTimeout);
             }, null, timeoutSeconds * 20L);
         }
 
-        PENDING.put(playerId, new PendingInput(cancelWord, onSubmit, onCancel, timeoutTask));
+        pendingInputs.put(playerId, new PendingInput(cancelWord, onSubmit, onCancel, timeoutTask));
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onChat(@NotNull AsyncChatEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
-        PendingInput pending = PENDING.remove(playerId);
+        PendingInput pending = pendingInputs.remove(playerId);
         if (pending == null) {
             return;
         }
@@ -81,16 +78,7 @@ public final class ChatInput implements Listener {
             return;
         }
 
-        String sanitized = MiniMessage.miniMessage()
-                .escapeTags(message).replace("\n", "").replace("\r", "");
-        List<Action> resolved = pending.onSubmit.stream()
-                .map(action -> new Action(
-                        action.getType(),
-                        action.getValue().replace("{input}", sanitized),
-                        action.getDelay(),
-                        action.getChance()))
-                .toList();
-
+        List<Action> resolved = InputActions.resolveInput(pending.onSubmit, message);
         player.getScheduler().run(plugin, task ->
                 actionRegistry.executeActions(player, resolved), null);
     }
@@ -101,10 +89,11 @@ public final class ChatInput implements Listener {
     }
 
     private void cancel(@NotNull UUID playerId) {
-        PendingInput pending = PENDING.remove(playerId);
-        if (pending != null) {
-            pending.cancelTimeout();
+        PendingInput pending = pendingInputs.remove(playerId);
+        if (pending == null) {
+            return;
         }
+        pending.cancelTimeout();
     }
 
     private record PendingInput(

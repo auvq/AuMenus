@@ -17,4 +17,15 @@ public final class NexoHook {
         }
         return builder.build();
     }
+
+    public static @Nullable String idFromItem(@NotNull ItemStack item) {
+        try {
+            if (!NexoItems.exists(item)) {
+                return null;
+            }
+            return NexoItems.idFromItem(item);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
 }

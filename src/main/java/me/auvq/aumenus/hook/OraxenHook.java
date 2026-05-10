@@ -19,4 +19,15 @@ public final class OraxenHook {
         ItemStack stack = builder.build();
         return stack != null ? stack.clone() : null;
     }
+
+    public static @Nullable String idFromItem(@NotNull ItemStack item) {
+        try {
+            if (!OraxenItems.exists(item)) {
+                return null;
+            }
+            return OraxenItems.getIdByItem(item);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
 }

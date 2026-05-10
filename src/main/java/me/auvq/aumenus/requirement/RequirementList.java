@@ -27,18 +27,12 @@ public final class RequirementList {
         int passed = 0;
 
         for (Requirement req : requirements) {
-            boolean result = registry.evaluate(player, req);
-
-            if (result) {
-                passed++;
-                if (stopAtSuccess && minimumRequired > 0 && passed >= minimumRequired) {
-                    return true;
-                }
+            if (!registry.evaluate(player, req)) {
                 continue;
             }
-
-            if (req.isOptional()) {
-                continue;
+            passed++;
+            if (stopAtSuccess && minimumRequired > 0 && passed >= minimumRequired) {
+                return true;
             }
         }
 

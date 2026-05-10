@@ -1,0 +1,117 @@
+# AuMenus - Credit Shop Main Hub
+#
+# Part of the smooth cross-menu swap test set.
+# All shop_* menus are size 54 so clicks that open another shop menu
+# go through the flicker-free bundle swap path.
+#
+# Open with: /shop
+
+title: "<gradient:#ffd93d:#ff6b6b><bold>Credit Shop</bold></gradient>"
+command: shop
+size: 54
+
+items:
+
+  border_top:
+    material: YELLOW_STAINED_GLASS_PANE
+    name: " "
+    hide_tooltip: true
+    slots: [0-8]
+
+  border_sides:
+    material: ORANGE_STAINED_GLASS_PANE
+    name: " "
+    hide_tooltip: true
+    slots: [9, 17, 18, 26, 27, 35, 36, 44]
+
+  border_bottom:
+    material: YELLOW_STAINED_GLASS_PANE
+    name: " "
+    hide_tooltip: true
+    slots: [45-53]
+
+  category_weapons:
+    material: NETHERITE_SWORD
+    slot: 11
+    name: "<gradient:#ff6b6b:#ffd93d><bold>Weapons</bold></gradient>"
+    lore:
+      - "&7Swords, bows, arrows and more."
+      - ""
+      - "&e&l> &fClick to browse"
+    on_click:
+      - open: shop_weapons
+
+  category_armor:
+    material: NETHERITE_CHESTPLATE
+    slot: 13
+    name: "<gradient:#4ecdc4:#9b59b6><bold>Armor</bold></gradient>"
+    lore:
+      - "&7Helmets, chestplates, boots."
+      - ""
+      - "&e&l> &fClick to browse"
+    on_click:
+      - open: shop_armor
+
+  category_tools:
+    material: NETHERITE_PICKAXE
+    slot: 15
+    name: "<gradient:#ffd93d:#4ecdc4><bold>Tools</bold></gradient>"
+    lore:
+      - "&7Pickaxes, axes, shovels."
+      - ""
+      - "&e&l> &fClick to browse"
+    on_click:
+      - open: shop_tools
+
+  category_blocks:
+    material: DIAMOND_BLOCK
+    slot: 29
+    name: "<gradient:#9b59b6:#4ecdc4><bold>Blocks</bold></gradient>"
+    lore:
+      - "&7Building materials."
+      - ""
+      - "&e&l> &fClick to browse"
+    on_click:
+      - open: shop_blocks
+
+  category_food:
+    material: GOLDEN_APPLE
+    slot: 31
+    name: "<gradient:#ff6b6b:#4ecdc4><bold>Food</bold></gradient>"
+    lore:
+      - "&7Consumables and cooking."
+      - ""
+      - "&e&l> &fClick to browse"
+    on_click:
+      - open: shop_food
+
+  category_misc:
+    material: ENDER_CHEST
+    slot: 33
+    name: "<gradient:#4ecdc4:#ffd93d><bold>Misc</bold></gradient>"
+    lore:
+      - "&7Special items and curiosities."
+      - ""
+      - "&e&l> &fClick to browse"
+    on_click:
+      - open: shop_misc
+
+  info:
+    material: PAPER
+    slot: 22
+    name: "<gradient:#4ecdc4:#9b59b6><bold>Shop Info</bold></gradient>"
+    lore:
+      - "&7Welcome to the credit shop."
+      - ""
+      - "&7Every menu is 54 slots so"
+      - "&7cross-navigation swaps are"
+      - "&7flicker-free."
+      - ""
+      - "&7Spam-click categories to test."
+
+  close:
+    material: BARRIER
+    slot: 49
+    name: "&c&lClose"
+    on_click:
+      - close

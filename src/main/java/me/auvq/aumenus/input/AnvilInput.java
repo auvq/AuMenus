@@ -4,7 +4,6 @@ import me.auvq.aumenus.AuMenus;
 import me.auvq.aumenus.action.Action;
 import me.auvq.aumenus.requirement.RequirementList;
 import me.auvq.aumenus.util.Util;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -108,7 +107,7 @@ public final class AnvilInput {
                 player.closeInventory();
                 HandlerList.unregisterAll(this);
 
-                List<Action> resolved = resolveInputActions(onSubmit, inputText);
+                List<Action> resolved = InputActions.resolveInput(onSubmit, inputText);
                 player.getScheduler().run(plugin, t ->
                         plugin.getActionRegistry().executeActions(player, resolved), null);
             }
@@ -147,29 +146,16 @@ public final class AnvilInput {
         }
 
         if (!requirementList.getDenyActions().isEmpty()) {
-            List<Action> denyResolved = resolveInputActions(requirementList.getDenyActions(), inputText);
+            List<Action> denyResolved = InputActions.resolveInput(requirementList.getDenyActions(), inputText);
             plugin.getActionRegistry().executeActions(player, denyResolved);
         }
         return false;
     }
 
-    private @NotNull List<Action> resolveInputActions(@NotNull List<Action> actions, @NotNull String inputText) {
-        String sanitized = MiniMessage.miniMessage()
-                .escapeTags(inputText).replace("\n", "").replace("\r", "");
-        return actions.stream()
-                .map(action -> new Action(
-                        action.getType(),
-                        action.getValue().replace("{input}", sanitized),
-                        action.getDelay(),
-                        action.getChance()))
-                .toList();
-    }
-
     @SuppressWarnings("unchecked")
     private @NotNull Map<String, Object> resolveInputInConfig(@NotNull Map<String, Object> config,
                                                                @NotNull String inputText) {
-        String sanitized = MiniMessage.miniMessage()
-                .escapeTags(inputText).replace("\n", "").replace("\r", "");
+        String sanitized = InputActions.sanitize(inputText);
 
         Map<String, Object> resolved = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : config.entrySet()) {

@@ -28,7 +28,6 @@ public final class MenuListener implements Listener {
     private final AuMenus plugin;
     private final ActionRegistry actionRegistry;
     private final RequirementRegistry requirementRegistry;
-    private final long cooldownMs;
 
     private record DenyContext(String needed, String current, String remaining, String input, String output) {}
 
@@ -38,7 +37,10 @@ public final class MenuListener implements Listener {
         this.plugin = plugin;
         this.actionRegistry = actionRegistry;
         this.requirementRegistry = requirementRegistry;
-        this.cooldownMs = plugin.getConfig().getInt("click_cooldown", 2) * 50L;
+    }
+
+    private long defaultCooldownMs() {
+        return plugin.getConfig().getInt("click_cooldown", 2) * 50L;
     }
 
     @EventHandler(priority = EventPriority.LOW)
@@ -66,7 +68,7 @@ public final class MenuListener implements Listener {
 
         long now = System.currentTimeMillis();
         long configuredCooldown = holder.getMenu().getClickCooldown() >= 0
-                ? holder.getMenu().getClickCooldown() * 50L : this.cooldownMs;
+                ? holder.getMenu().getClickCooldown() * 50L : defaultCooldownMs();
         long effectiveCooldown = Math.max(100L, configuredCooldown);
         if (now - holder.getLastClickTime() < effectiveCooldown) {
             return;
@@ -110,8 +112,6 @@ public final class MenuListener implements Listener {
             return;
         }
 
-        holder.stopUpdateTask();
-        holder.stopAnimationTask();
         MenuHolder current = plugin.getMenuRegistry().getOpenMenu(player.getUniqueId()).orElse(null);
         if (current == holder) {
             plugin.getMenuRegistry().trackClose(player.getUniqueId());
@@ -141,7 +141,7 @@ public final class MenuListener implements Listener {
         return specific.isEmpty() ? item.getClickActions() : specific;
     }
 
-    private RequirementList resolveRequirements(@NotNull MenuItem item, @NotNull ClickType clickType) {
+    private @Nullable RequirementList resolveRequirements(@NotNull MenuItem item, @NotNull ClickType clickType) {
         RequirementList specific = switch (clickType) {
             case SHIFT_LEFT -> item.getShiftLeftClickRequire();
             case SHIFT_RIGHT -> item.getShiftRightClickRequire();

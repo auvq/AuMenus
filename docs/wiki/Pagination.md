@@ -23,7 +23,11 @@ Items that fill the page slots. Defined like regular items but without `slot` or
 | `{page}`     | Current page number |
 | `{max_page}` | Total page count    |
 
-If the title contains `{page}` or `{max_page}`, changing pages re-creates the inventory to update the title.
+Static items like nav buttons and info panels can use `{page}` and `{max_page}` in their lore. They refresh on every page change so the values stay in sync with the title.
+
+### Smooth transitions
+
+Page changes are flicker-free. AuMenus sends the new title and slot contents in a single bundle packet so the client renders both atomically. No intermediate empty frame, even when the title contains `{page}` and the inventory has to retitle. Same applies to opening another chest menu of the same size via the `open` action: the existing window is reused instead of being closed and reopened. See `smooth_transitions` in [Configuration](Configuration#configyml) to disable.
 
 ### Navigation
 

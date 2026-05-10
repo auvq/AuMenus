@@ -13,6 +13,7 @@ import me.auvq.aumenus.requirement.RequirementList;
 import me.auvq.aumenus.requirement.RequirementRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.inventory.InventoryType;
 import org.jetbrains.annotations.NotNull;
@@ -36,6 +37,7 @@ public final class MenuLoader {
     private final ActionRegistry actionRegistry;
     private final RequirementRegistry requirementRegistry;
     private final MenuRegistry menuRegistry;
+    private @Nullable Map<String, ConfigurationSection> templateCache;
 
     public MenuLoader(@NotNull AuMenus plugin,
                       @NotNull ActionRegistry actionRegistry,
@@ -193,7 +195,7 @@ public final class MenuLoader {
             checkHookDependencies(menu, fileName);
             return menu;
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             plugin.getLogger().severe("Failed to load menu file " + fileName + ": " + e.getMessage());
             return null;
         }
@@ -511,8 +513,6 @@ public final class MenuLoader {
                 .build();
     }
 
-    private Map<String, ConfigurationSection> templateCache;
-
     private void loadTemplates() {
         templateCache = new HashMap<>();
         File templatesDir = new File(plugin.getDataFolder(), "templates");
@@ -569,7 +569,7 @@ public final class MenuLoader {
             }
             try {
                 resolved.loadFromString(yaml);
-            } catch (Exception e) {
+            } catch (InvalidConfigurationException e) {
                 validator.addError("Template '" + templateKey + "' variable replacement failed");
                 return null;
             }

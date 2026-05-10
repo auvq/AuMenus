@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -85,7 +86,7 @@ public final class UpdateChecker implements Listener {
             int end = json.indexOf("\"", start);
             String tag = json.substring(start, end);
             return tag.startsWith("v") ? tag.substring(1) : tag;
-        } catch (Exception e) {
+        } catch (IOException e) {
             plugin.getLogger().log(Level.FINE, "Update check failed", e);
             return null;
         }

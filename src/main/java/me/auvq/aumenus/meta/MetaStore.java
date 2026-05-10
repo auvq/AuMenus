@@ -8,10 +8,13 @@ import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BinaryOperator;
 
 public final class MetaStore {
 
@@ -29,6 +32,11 @@ public final class MetaStore {
     public void set(@NotNull Player player, @NotNull String key, @NotNull String type, @NotNull String value) {
         PersistentDataContainer pdc = player.getPersistentDataContainer();
         NamespacedKey nsKey = key(key);
+
+        if (plugin.getConfig().getBoolean("debug")) {
+            plugin.getLogger().info("[Meta] " + player.getName() + " set " + key
+                    + " (" + type + ") = " + value);
+        }
 
         try {
             switch (type.toUpperCase()) {
@@ -56,29 +64,36 @@ public final class MetaStore {
     }
 
     public void add(@NotNull Player player, @NotNull String key, @NotNull String type, @NotNull String value) {
-        try {
-            String current = get(player, key, type, "0");
-            double result = Double.parseDouble(current) + Double.parseDouble(value);
-            if (Double.isNaN(result) || Double.isInfinite(result)) {
-                return;
-            }
-            set(player, key, type, formatNumber(result, type));
-        } catch (NumberFormatException e) {
-            plugin.getLogger().warning("Invalid number in meta add for key '" + key + "': " + e.getMessage());
-        }
+        applyArithmetic(player, key, type, value, "add", BigDecimal::add);
     }
 
     public void subtract(@NotNull Player player, @NotNull String key, @NotNull String type, @NotNull String value) {
+        applyArithmetic(player, key, type, value, "subtract", BigDecimal::subtract);
+    }
+
+    private void applyArithmetic(@NotNull Player player, @NotNull String key, @NotNull String type,
+                                   @NotNull String value, @NotNull String operation,
+                                   @NotNull BinaryOperator<BigDecimal> op) {
         try {
             String current = get(player, key, type, "0");
-            double result = Double.parseDouble(current) - Double.parseDouble(value);
-            if (Double.isNaN(result) || Double.isInfinite(result)) {
-                return;
+            BigDecimal result = op.apply(new BigDecimal(current), new BigDecimal(value));
+            if ("DOUBLE".equalsIgnoreCase(type)) {
+                int scale = Math.max(scaleOf(current), scaleOf(value));
+                result = result.setScale(scale, RoundingMode.HALF_UP);
             }
-            set(player, key, type, formatNumber(result, type));
+            set(player, key, type, formatNumber(result.doubleValue(), type, result.toPlainString()));
         } catch (NumberFormatException e) {
-            plugin.getLogger().warning("Invalid number in meta subtract for key '" + key + "': " + e.getMessage());
+            plugin.getLogger().warning("Invalid number in meta " + operation + " for key '" + key
+                    + "': " + e.getMessage());
         }
+    }
+
+    private int scaleOf(@NotNull String number) {
+        int dot = number.indexOf('.');
+        if (dot == -1) {
+            return 0;
+        }
+        return number.length() - dot - 1;
     }
 
     public void switchBoolean(@NotNull Player player, @NotNull String key) {
@@ -223,11 +238,11 @@ public final class MetaStore {
         }
     }
 
-    private @NotNull String formatNumber(double value, @NotNull String type) {
+    private @NotNull String formatNumber(double value, @NotNull String type, @NotNull String plainString) {
         return switch (type.toUpperCase()) {
             case "INTEGER", "INT" -> String.valueOf((int) value);
             case "LONG" -> String.valueOf((long) value);
-            default -> String.valueOf(value);
+            default -> plainString;
         };
     }
 }

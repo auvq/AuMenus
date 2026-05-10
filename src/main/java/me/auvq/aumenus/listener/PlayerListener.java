@@ -101,13 +101,6 @@ public final class PlayerListener implements Listener {
         plugin.getLastOpenedMenus().remove(playerId);
         plugin.getPreviousMenus().remove(playerId);
 
-        MenuHolder holder = plugin.getMenuRegistry().getOpenMenu(playerId).orElse(null);
-        if (holder == null) {
-            return;
-        }
-
-        holder.stopUpdateTask();
-        holder.stopAnimationTask();
         plugin.getMenuRegistry().trackClose(playerId);
     }
 }

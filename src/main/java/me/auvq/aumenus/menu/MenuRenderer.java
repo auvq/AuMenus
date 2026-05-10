@@ -17,9 +17,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class MenuRenderer {
 
@@ -31,6 +33,10 @@ public final class MenuRenderer {
         this.plugin = plugin;
         this.requirementRegistry = requirementRegistry;
         this.itemBuilder = new ItemBuilder(plugin);
+    }
+
+    public void clearItemCache() {
+        itemBuilder.clearCache();
     }
 
     public void render(@NotNull MenuHolder holder) {
@@ -70,6 +76,47 @@ public final class MenuRenderer {
         }
     }
 
+    public void refreshStaticItems(@NotNull MenuHolder holder) {
+        Player player = holder.getPlayer();
+        if (player == null) {
+            return;
+        }
+
+        Menu menu = holder.getMenu();
+        Set<Integer> pageSlots = new HashSet<>(menu.getPageSlots());
+        List<Map.Entry<Integer, MenuItem>> snapshot = new ArrayList<>(holder.getActiveItems().entrySet());
+
+        List<MenuItem> refreshedProgress = new ArrayList<>();
+        for (Map.Entry<Integer, MenuItem> entry : snapshot) {
+            int slot = entry.getKey();
+            if (pageSlots.contains(slot)) {
+                continue;
+            }
+            MenuItem item = entry.getValue();
+            if (item.hasFrames()) {
+                continue;
+            }
+            if (renderIfProgress(player, item, holder, refreshedProgress)) {
+                continue;
+            }
+            holder.getInventory().setItem(slot, itemBuilder.buildItemStack(player, item, holder));
+        }
+    }
+
+    private boolean renderIfProgress(@NotNull Player player, @NotNull MenuItem item,
+                                       @NotNull MenuHolder holder,
+                                       @NotNull List<MenuItem> refreshedProgress) {
+        if (!item.isProgress()) {
+            return false;
+        }
+        if (refreshedProgress.contains(item)) {
+            return true;
+        }
+        refreshedProgress.add(item);
+        renderProgressItem(player, item, holder, holder.getInventory());
+        return true;
+    }
+
     public void renderPage(@NotNull MenuHolder holder) {
         Player player = holder.getPlayer();
         if (player == null) {
@@ -105,7 +152,7 @@ public final class MenuRenderer {
 
     private @NotNull List<MenuItem> generatePlayerListItems(@NotNull PlayerListTemplate template,
                                                               int startIndex, int maxItems) {
-        List<? extends Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
+        List<Player> onlinePlayers = Util.snapshotOnlinePlayers();
         int endIndex = Math.min(startIndex + maxItems, onlinePlayers.size());
         if (startIndex >= onlinePlayers.size()) {
             return List.of();
@@ -161,22 +208,17 @@ public final class MenuRenderer {
             List<MenuItem> refreshedProgress = new ArrayList<>();
             for (Map.Entry<Integer, MenuItem> entry : holder.getActiveItems().entrySet()) {
                 MenuItem item = entry.getValue();
-                if (!item.isUpdate()) {
+                if (!item.isUpdate() || item.hasFrames()) {
                     continue;
                 }
-                if (item.isProgress()) {
-                    if (refreshedProgress.contains(item)) {
-                        continue;
-                    }
-                    refreshedProgress.add(item);
-                    renderProgressItem(player, item, holder, holder.getInventory());
-                } else {
-                    int slot = entry.getKey();
-                    ItemStack built = itemBuilder.buildItemStack(player, item, holder);
-                    ItemStack current = holder.getInventory().getItem(slot);
-                    if (!built.equals(current)) {
-                        holder.getInventory().setItem(slot, built);
-                    }
+                if (renderIfProgress(player, item, holder, refreshedProgress)) {
+                    continue;
+                }
+                int slot = entry.getKey();
+                ItemStack built = itemBuilder.buildItemStack(player, item, holder);
+                ItemStack current = holder.getInventory().getItem(slot);
+                if (!built.equals(current)) {
+                    holder.getInventory().setItem(slot, built);
                 }
             }
         } finally {

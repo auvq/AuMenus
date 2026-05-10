@@ -14,16 +14,25 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.logging.Level;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class MenuMigrator {
+
+    private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.builder()
+            .character('&')
+            .hexColors()
+            .build();
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+    private static final Pattern HEX_PATTERN = Pattern.compile("&#([0-9a-fA-F]{6})");
+    private static final Pattern SECTION_HEX_PATTERN = Pattern.compile("§x(§[0-9a-fA-F]){6}");
+    private static final Pattern SECTION_CODE_PATTERN = Pattern.compile("§([0-9a-fk-orA-FK-OR])");
 
     private final AuMenus plugin;
 
@@ -139,7 +148,7 @@ public final class MenuMigrator {
             ourConfig.save(outputFile);
             log(notifier, "&#00FF7FMigrated '" + menuName + "' successfully.");
             return true;
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             log(notifier, "&#FF474DFailed to migrate '" + menuName + "': " + e.getMessage());
             plugin.getLogger().log(Level.WARNING, "Migration failed for " + menuName, e);
             return false;
@@ -570,15 +579,6 @@ public final class MenuMigrator {
         return result;
     }
 
-    private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.builder()
-            .character('&')
-            .hexColors()
-            .build();
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-    private static final Pattern HEX_PATTERN = Pattern.compile("&#([0-9a-fA-F]{6})");
-    private static final Pattern SECTION_HEX_PATTERN = Pattern.compile("§x(§[0-9a-fA-F]){6}");
-    private static final Pattern SECTION_CODE_PATTERN = Pattern.compile("§([0-9a-fk-orA-FK-OR])");
-
     public boolean convertToMiniMessage(@NotNull File file) {
         try {
             YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -593,7 +593,7 @@ public final class MenuMigrator {
 
             config.save(file);
             return true;
-        } catch (Exception e) {
+        } catch (IOException e) {
             plugin.getLogger().warning("Failed to convert " + file.getName() + " to MiniMessage: " + e.getMessage());
             return false;
         }

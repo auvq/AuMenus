@@ -571,6 +571,12 @@ default_update_interval: 20
 # Global click cooldown in ticks (2 = 100ms)
 click_cooldown: 2
 
+# Flicker-free menu transitions via packet bundling.
+# Page changes and same-size menu opens atomically swap title + contents
+# in a single ClientboundBundlePacket so the client never sees an empty frame.
+# Falls back to a normal reopen on any NMS failure. Chest menus only.
+smooth_transitions: true
+
 # Global defaults for target player (can be overridden per menu)
 default_allow_target_player: false
 default_allow_offline_target: false
@@ -585,7 +591,8 @@ messages:
 | `debug` | `false` | Enables debug logging to console |
 | `check_updates` | `true` | Checks for new versions on startup |
 | `default_update_interval` | `20` | Default placeholder refresh rate in ticks |
-| `click_cooldown` | `2` | Global click cooldown in ticks |
+| `click_cooldown` | `2` | Global click cooldown in ticks. Picked up live on `/am reload` |
+| `smooth_transitions` | `true` | Flicker-free page changes and cross-menu opens of matching size via packet bundling. Chest menus only. Falls back to a normal reopen if NMS reflection fails |
 | `default_allow_target_player` | `false` | Global default for target player support |
 | `default_allow_offline_target` | `false` | Global default for offline target support |
 | `messages.player_not_found` | `&cPlayer '{player}' not found.` | Message when target player isn't found. Use `{player}` for the name |

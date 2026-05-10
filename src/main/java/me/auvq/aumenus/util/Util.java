@@ -1,6 +1,8 @@
 package me.auvq.aumenus.util;
 
 import me.auvq.aumenus.AuMenus;
+import me.auvq.aumenus.hook.HookProvider;
+import me.auvq.aumenus.menu.MenuHolder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
@@ -10,17 +12,17 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import me.auvq.aumenus.hook.HookProvider;
-import me.auvq.aumenus.menu.MenuHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,6 +47,20 @@ public final class Util {
         String msg = getMessage("player_not_found", "&cPlayer '{player}' not found.");
         String escaped = MiniMessage.miniMessage().escapeTags(playerName);
         return parse(msg.replace("{player}", escaped));
+    }
+
+    public static @NotNull List<Player> snapshotOnlinePlayers() {
+        return snapshotPlayers(Bukkit.getOnlinePlayers());
+    }
+
+    public static @NotNull List<Player> snapshotPlayers(@NotNull Collection<? extends Player> source) {
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try {
+                return new ArrayList<>(source);
+            } catch (ConcurrentModificationException ignored) {
+            }
+        }
+        return List.of();
     }
 
     public static @NotNull String toLegacyMiniMessage(@Nullable String input) {
@@ -224,6 +240,10 @@ public final class Util {
             if (hookProvider.isPapiEnabled()) {
                 result = hookProvider.papi().setPlaceholders(papiTarget, result);
             }
+        }
+
+        if (result.contains("%player_name%")) {
+            result = result.replace("%player_name%", player.getName());
         }
 
         return result;

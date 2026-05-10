@@ -1,0 +1,414 @@
+# AuMenus - Credit Shop: Food
+#
+# Every item on_click opens another shop menu to exercise
+# the cross-menu smooth swap path.
+
+title: "<gradient:#ff6b6b:#4ecdc4><bold>Food</bold></gradient>"
+size: 54
+
+items:
+
+  border_top:
+    material: PINK_STAINED_GLASS_PANE
+    name: " "
+    hide_tooltip: true
+    slots: [0-8]
+
+  border_sides:
+    material: PINK_STAINED_GLASS_PANE
+    name: " "
+    hide_tooltip: true
+    slots: [9, 17, 18, 26, 27, 35, 36, 44]
+
+  border_bottom:
+    material: PINK_STAINED_GLASS_PANE
+    name: " "
+    hide_tooltip: true
+    slots: [45, 46, 47, 51, 52, 53]
+
+  item_01:
+    material: APPLE
+    slot: 10
+    name: "&f&lApple"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_misc"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_misc
+
+  item_02:
+    material: GOLDEN_APPLE
+    slot: 11
+    name: "&f&lGolden Apple"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_weapons"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_weapons
+
+  item_03:
+    material: ENCHANTED_GOLDEN_APPLE
+    slot: 12
+    name: "&f&lGod Apple"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_armor"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_armor
+
+  item_04:
+    material: BREAD
+    slot: 13
+    name: "&f&lBread"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_tools"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_tools
+
+  item_05:
+    material: CAKE
+    slot: 14
+    name: "&f&lCake"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_blocks"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_blocks
+
+  item_06:
+    material: COOKIE
+    slot: 15
+    name: "&f&lCookie"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_food"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_food
+
+  item_07:
+    material: PUMPKIN_PIE
+    slot: 16
+    name: "&f&lPumpkin Pie"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_misc"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_misc
+
+  item_08:
+    material: COOKED_BEEF
+    slot: 19
+    name: "&f&lCooked Beef"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_weapons"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_weapons
+
+  item_09:
+    material: COOKED_CHICKEN
+    slot: 20
+    name: "&f&lCooked Chicken"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_armor"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_armor
+
+  item_10:
+    material: COOKED_PORKCHOP
+    slot: 21
+    name: "&f&lCooked Porkchop"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_tools"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_tools
+
+  item_11:
+    material: COOKED_MUTTON
+    slot: 22
+    name: "&f&lCooked Mutton"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_blocks"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_blocks
+
+  item_12:
+    material: COOKED_RABBIT
+    slot: 23
+    name: "&f&lCooked Rabbit"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_food"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_food
+
+  item_13:
+    material: COOKED_SALMON
+    slot: 24
+    name: "&f&lCooked Salmon"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_misc"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_misc
+
+  item_14:
+    material: COOKED_COD
+    slot: 25
+    name: "&f&lCooked Cod"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_weapons"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_weapons
+
+  item_15:
+    material: CARROT
+    slot: 28
+    name: "&f&lCarrot"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_armor"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_armor
+
+  item_16:
+    material: POTATO
+    slot: 29
+    name: "&f&lPotato"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_tools"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_tools
+
+  item_17:
+    material: BAKED_POTATO
+    slot: 30
+    name: "&f&lBaked Potato"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_blocks"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_blocks
+
+  item_18:
+    material: BEETROOT
+    slot: 31
+    name: "&f&lBeetroot"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_food"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_food
+
+  item_19:
+    material: MELON_SLICE
+    slot: 32
+    name: "&f&lMelon Slice"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_misc"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_misc
+
+  item_20:
+    material: SWEET_BERRIES
+    slot: 33
+    name: "&f&lSweet Berries"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_weapons"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_weapons
+
+  item_21:
+    material: GLOW_BERRIES
+    slot: 34
+    name: "&f&lGlow Berries"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_armor"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_armor
+
+  item_22:
+    material: HONEY_BOTTLE
+    slot: 37
+    name: "&f&lHoney Bottle"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_tools"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_tools
+
+  item_23:
+    material: MILK_BUCKET
+    slot: 38
+    name: "&f&lMilk Bucket"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_blocks"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_blocks
+
+  item_24:
+    material: MUSHROOM_STEW
+    slot: 39
+    name: "&f&lMushroom Stew"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_food"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_food
+
+  item_25:
+    material: RABBIT_STEW
+    slot: 40
+    name: "&f&lRabbit Stew"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_misc"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_misc
+
+  item_26:
+    material: BEETROOT_SOUP
+    slot: 41
+    name: "&f&lBeetroot Soup"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_weapons"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_weapons
+
+  item_27:
+    material: SUSPICIOUS_STEW
+    slot: 42
+    name: "&f&lSuspicious Stew"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_armor"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_armor
+
+  item_28:
+    material: CHORUS_FRUIT
+    slot: 43
+    name: "&f&lChorus Fruit"
+    lore:
+      - "&7Cost: &6&l100 credits"
+      - ""
+      - "&7Clicking jumps to &f&lshop_tools"
+      - ""
+      - "&e&l> &fClick"
+    on_click:
+      - open: shop_tools
+
+  back_to_main:
+    material: ARROW
+    slot: 48
+    name: "&e&l< &fShop Menu"
+    on_click:
+      - open: shop_main
+
+  close:
+    material: BARRIER
+    slot: 49
+    name: "&c&lClose"
+    on_click:
+      - close
+
+  next_category:
+    material: SPECTRAL_ARROW
+    slot: 50
+    name: "&a&l> &fNext Category"
+    lore:
+      - "&7Jumps to &f&lshop_misc"
+    on_click:
+      - open: shop_misc

@@ -12,4 +12,12 @@ public final class HeadDatabaseHook {
     public static @Nullable ItemStack getItem(@NotNull String id) {
         return new HeadDatabaseAPI().getItemHead(id);
     }
+
+    public static @Nullable String idFromItem(@NotNull ItemStack item) {
+        try {
+            return new HeadDatabaseAPI().getItemID(item);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
 }

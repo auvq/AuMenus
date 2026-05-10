@@ -18,4 +18,13 @@ public final class ItemsAdderHook {
         ItemStack itemStack = stack.getItemStack();
         return itemStack != null ? itemStack.clone() : null;
     }
+
+    public static @Nullable String idFromItem(@NotNull ItemStack item) {
+        try {
+            CustomStack stack = CustomStack.byItemStack(item);
+            return stack != null ? stack.getNamespacedID() : null;
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
 }

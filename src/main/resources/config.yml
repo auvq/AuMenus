@@ -9,6 +9,12 @@ default_update_interval: 20
 # Click cooldown in ticks to prevent spam-clicking (2 = 100ms)
 click_cooldown: 2
 
+# Flicker-free menu transitions via packet bundling.
+# Uses NMS reflection to atomically swap page/menu content while the window
+# stays open. Falls back to a normal reopen on any NMS failure.
+# Only applies to chest menus of matching size.
+smooth_transitions: true
+
 # Messages (MiniMessage supported)
 messages:
   player_not_found: "&cPlayer '{player}' not found."
