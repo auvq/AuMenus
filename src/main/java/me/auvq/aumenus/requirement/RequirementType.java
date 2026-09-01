@@ -52,12 +52,19 @@ public enum RequirementType {
         if (!plugin.getHookProvider().isVaultEnabled()) {
             return false;
         }
-        double amount = ((Number) config.get("amount")).doubleValue();
+        Double amount = toDouble(config.get("amount"));
+        if (amount == null) {
+            return false;
+        }
         return plugin.getHookProvider().vault().hasMoney(player, amount);
     }),
 
     HAS_EXP(List.of("has_exp", "has exp"), (player, config) -> {
-        int amount = ((Number) config.get("amount")).intValue();
+        Double rawAmount = toDouble(config.get("amount"));
+        if (rawAmount == null) {
+            return false;
+        }
+        int amount = rawAmount.intValue();
         boolean levels = config.containsKey("level") && Boolean.TRUE.equals(config.get("level"));
         if (levels) {
             return player.getLevel() >= amount;
@@ -242,6 +249,30 @@ public enum RequirementType {
     RequirementType(@NotNull List<String> aliases, @NotNull RequirementEvaluator evaluator) {
         this.aliases = aliases;
         this.evaluator = evaluator;
+    }
+
+    /**
+     * Safely converts a config value to a double, accepting both {@link Number}
+     * instances and {@link String} representations of numbers.
+     *
+     * @param value the raw config value
+     * @return the numeric value, or {@code null} if parsing fails
+     */
+    static @Nullable Double toDouble(@Nullable Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number n) {
+            return n.doubleValue();
+        }
+        if (value instanceof String s) {
+            try {
+                return Double.parseDouble(s.trim());
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
     }
 
     private static boolean evaluateExpression(@NotNull String expression) {
